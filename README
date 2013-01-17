@@ -1,1 +1,56 @@
-Radium compressor
+
+Radium compressor V0.0.1
+Released 2013-01-17
+
+
+HOW TO MAKE IT RUN
+
+        Either:
+
+          1. If you downloaded a tar-ball:
+
+          "
+          make
+          ./radium_compressor
+          "
+
+
+        Or:
+
+          2. If you checked out from a git repository:
+
+          "
+          touch audio/system_compressor.cpp
+          make
+          ./radium_compressor
+          "
+
+
+INTRODUCTION
+        Radium Compressor is the system compressor in Radium distributed as a standalone jack application.
+
+        Radium Compressor uses the stereo compressor found in effect.lib in the Faust distribution.
+        This compressor is written by Julius O. Smith III.
+
+        The Radium version is an optimized version of this compressor by using fast approximate logarithmic
+        and exponential functions written by Paul Mineiro:
+        http://www.machinedlearnings.com/2011/06/fast-approximate-logarithm-exponential.html
+
+        The GUI shows accurately the sound used for compression, and how much the sound is being compressed.
+        I haven't seen this in any audio compressor GUI before, but it's probably been done before.
+
+
+BUILD DEPENDENCIES FEDORA:
+      qt4-devel
+      jack-audio-connection-kit-devel
+
+
+BUILD DEPENDENCIES UBUNTU:
+      libqt4-dev
+      qt4-dev-tools
+      libjack-jackd2-dev or libjack-jackd1-dev
+
+
+CONTACT
+	k.s.matheussen@notam02.no
+	http://www.notam02.no/radium/
