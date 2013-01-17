@@ -27,17 +27,23 @@ HOW TO MAKE IT RUN
 
 
 INTRODUCTION
-        Radium Compressor is the system compressor in Radium distributed as a standalone jack application.
+        Radium Compressor is the system compressor in Radium,
+        but distributed as a standalone jack application.
 
-        Radium Compressor uses the stereo compressor found in effect.lib in the Faust distribution.
+        Radium Compressor uses the stereo compressor found in 
+        effect.lib in the Faust distribution.
         This compressor is written by Julius O. Smith III.
 
-        The Radium version is an optimized version of this compressor by using fast approximate logarithmic
-        and exponential functions written by Paul Mineiro:
+        The Radium version is an optimized version of this compressor
+        by using fast approximate logarithmic and exponential functions
+        written by Paul Mineiro:
         http://www.machinedlearnings.com/2011/06/fast-approximate-logarithm-exponential.html
 
-        The GUI shows accurately the sound used for compression, and how much the sound is being compressed.
-        I haven't seen this in any audio compressor GUI before, but it's probably been done before.
+        The GUI shows accurately the sound used for compression,
+        and how much the sound is being compressed.
+
+        I haven't seen this in any audio compressor GUI before,
+        but it's probably been done before.
 
 
 BUILD DEPENDENCIES FEDORA:
