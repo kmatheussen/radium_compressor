@@ -16,6 +16,7 @@
 #include <QtGui/QCheckBox>
 #include <QtGui/QHBoxLayout>
 #include <QtGui/QHeaderView>
+#include <QtGui/QLabel>
 #include <QtGui/QSlider>
 #include <QtGui/QToolButton>
 #include <QtGui/QVBoxLayout>
@@ -28,6 +29,7 @@ class Ui_Compressor_widget
 public:
     QVBoxLayout *verticalLayout;
     QHBoxLayout *horizontalLayout;
+    QLabel *radium_url;
     MyQCheckBox *bypass;
     MyQButton *load_button;
     MyQButton *save_button;
@@ -48,30 +50,39 @@ public:
         horizontalLayout->setObjectName(QString::fromUtf8("horizontalLayout"));
         horizontalLayout->setSizeConstraint(QLayout::SetFixedSize);
         horizontalLayout->setContentsMargins(-1, -1, -1, 2);
-        bypass = new MyQCheckBox(Compressor_widget);
-        bypass->setObjectName(QString::fromUtf8("bypass"));
-        QSizePolicy sizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+        radium_url = new QLabel(Compressor_widget);
+        radium_url->setObjectName(QString::fromUtf8("radium_url"));
+        QSizePolicy sizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         sizePolicy.setHorizontalStretch(0);
         sizePolicy.setVerticalStretch(0);
-        sizePolicy.setHeightForWidth(bypass->sizePolicy().hasHeightForWidth());
-        bypass->setSizePolicy(sizePolicy);
+        sizePolicy.setHeightForWidth(radium_url->sizePolicy().hasHeightForWidth());
+        radium_url->setSizePolicy(sizePolicy);
+        radium_url->setAlignment(Qt::AlignCenter);
+        radium_url->setOpenExternalLinks(true);
+
+        horizontalLayout->addWidget(radium_url);
+
+        bypass = new MyQCheckBox(Compressor_widget);
+        bypass->setObjectName(QString::fromUtf8("bypass"));
+        QSizePolicy sizePolicy1(QSizePolicy::Minimum, QSizePolicy::Minimum);
+        sizePolicy1.setHorizontalStretch(0);
+        sizePolicy1.setVerticalStretch(0);
+        sizePolicy1.setHeightForWidth(bypass->sizePolicy().hasHeightForWidth());
+        bypass->setSizePolicy(sizePolicy1);
 
         horizontalLayout->addWidget(bypass);
 
         load_button = new MyQButton(Compressor_widget);
         load_button->setObjectName(QString::fromUtf8("load_button"));
-        QSizePolicy sizePolicy1(QSizePolicy::Fixed, QSizePolicy::Fixed);
-        sizePolicy1.setHorizontalStretch(0);
-        sizePolicy1.setVerticalStretch(0);
-        sizePolicy1.setHeightForWidth(load_button->sizePolicy().hasHeightForWidth());
-        load_button->setSizePolicy(sizePolicy1);
+        sizePolicy.setHeightForWidth(load_button->sizePolicy().hasHeightForWidth());
+        load_button->setSizePolicy(sizePolicy);
 
         horizontalLayout->addWidget(load_button);
 
         save_button = new MyQButton(Compressor_widget);
         save_button->setObjectName(QString::fromUtf8("save_button"));
-        sizePolicy1.setHeightForWidth(save_button->sizePolicy().hasHeightForWidth());
-        save_button->setSizePolicy(sizePolicy1);
+        sizePolicy.setHeightForWidth(save_button->sizePolicy().hasHeightForWidth());
+        save_button->setSizePolicy(sizePolicy);
 
         horizontalLayout->addWidget(save_button);
 
@@ -101,6 +112,7 @@ public:
     void retranslateUi(QWidget *Compressor_widget)
     {
         Compressor_widget->setWindowTitle(QApplication::translate("Compressor_widget", "Radium Compressor", 0, QApplication::UnicodeUTF8));
+        radium_url->setText(QApplication::translate("Compressor_widget", "<A href=\"http://users.notam02.no/~kjetism/radium/\">Radium</A>", 0, QApplication::UnicodeUTF8));
         bypass->setText(QApplication::translate("Compressor_widget", "Bypass", 0, QApplication::UnicodeUTF8));
         load_button->setText(QApplication::translate("Compressor_widget", "Load", 0, QApplication::UnicodeUTF8));
         save_button->setText(QApplication::translate("Compressor_widget", "Save", 0, QApplication::UnicodeUTF8));

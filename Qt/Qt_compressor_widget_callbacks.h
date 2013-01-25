@@ -27,13 +27,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA. */
 const int min_db = -40;
 const int max_db = 40;
 
-const int k_timer_interval = 50;
+const int k_timer_interval = 35;
 
 const int max_attack_release = 500;
 
 const float def_threshold = 0.7f;
 const float def_ratio = 0.3;
 const float def_makeupgain = 0.3f;
+
+namespace{
 
 enum{
   RATIO=0,
@@ -46,10 +48,10 @@ enum{
 };
 
 
-struct Comp : public QWidget{
+struct Comp : public QWidget, public QTimer{
   // All values have the value 0 at top, and 1 at bottom, and:
   // 0 <= val1 <= val2 <= 1
-  // (sometimes < intead of <=)
+  // (sometimes < instead of <=)
 
   // slider 1
   double in_val1; // 0
@@ -95,24 +97,22 @@ struct Comp : public QWidget{
   struct Peaks{
     const static int num_peaks = 30;//24;
     
-    float peaks[num_peaks];
+    float peaks[num_peaks]; // in dB
     int peak_pos;
+    float last_peak;
+
+    int min_peak, max_peak; // in pixels
     
     Peaks()
       : peak_pos(0)
+      , last_peak(0)
+      , min_peak(0)
+      , max_peak(0)
     {
       for(int i=0;i<num_peaks;i++)
         peaks[i]=0.0f;
     }
 
-    void add_peaks(float peak){
-      //printf("adding peak %.2f. ",peak);
-      peaks[peak_pos] = peak;
-      peak_pos++;
-      if(peak_pos==num_peaks)
-        peak_pos=0;
-    }
-    
     float get_min_peak(){
       float ret=max_db;
       for(int i=0;i<num_peaks;i++)
@@ -129,33 +129,113 @@ struct Comp : public QWidget{
       return ret;
     }
 
+    void set_min_max(const Box &box){
+      min_peak = scale(get_min_peak(),min_db,max_db, box.y2, box.y1);
+      max_peak = scale(get_max_peak(),min_db,max_db, box.y2, box.y1);
+    }
+
+    const int get_y_pixel(const Box &box){
+      return scale(last_peak,min_db,max_db, box.y2, box.y1);
+    }
+
+    const QLine get_line_line(const Box &box){
+      const int peak = get_y_pixel(box);
+      return QLine(box.x1,peak,box.x2,peak);
+    }
+
+    const QLine get_line_to_next_box(const Box &box1, Peaks *peaks2, const Box &box2){
+      Peaks *peaks1 = this;
+      return QLine(box1.x2,peaks1->get_y_pixel(box1),
+                   box2.x1,peaks2->get_y_pixel(box2));
+    }
+
+    // For lines in boxes (those lines are always horizontal)
+    const QRect get_line_rect(const Box &box){
+      const int peak = get_y_pixel(box);
+      return QRect(box.x1,peak-2,box.x2-box.x1,5);
+    }
+
+    // For the lines between boxes.
+    const QPolygon get_line_region(const Box &box1, Peaks *peaks2, const Box &box2){
+      Peaks *peaks1 = this;
+      const QLine line1 = peaks1->get_line_line(box1);
+      const QLine line2 = peaks2->get_line_line(box2);
+
+#if 0
+      double degree = 3.14159265359/2.0 - atan( (double)(line2.y1() - line1.y2()) / (double)(line2.x1() - line1.x2()));
+      int h = ceil( (4.0/sin(degree)) / 2.0);
+      //printf("degree: %f, h: %d\n",degree*57.2957795,h);
+#else
+      // optimized:
+      int h_square = line2.y1() - line1.y2();
+      h_square *= h_square;
+
+      int w_square = line2.x1() - line1.x2();
+      w_square *= w_square;
+
+      int h = ceil(4.0/2.0 * sqrt((double)h_square/(double)w_square + 1.0)); // "4.0" is the pen width.
+#endif
+
+      QPolygon poly(4);
+
+      poly.setPoint(0,line1.x2(), line1.y2()-h);
+      poly.setPoint(1,line1.x2(), line1.y2()+h);
+      poly.setPoint(2,line2.x1(), line2.y1()+h);
+      poly.setPoint(3,line2.x1(), line2.y1()-h);
+
+      return poly;
+    }
+
+    const QRect get_area_rect(const Box &box){
+      return QRect(box.x1,max_peak,
+                   box.x2-box.x1, min_peak-max_peak);
+    }
+
     void paint_peak_area(QPainter *p, const Box &box){
       QColor col(40,90,140);
       col.setAlpha(80);
 
-      int min_peak = scale(get_min_peak(),min_db,max_db, box.y2, box.y1);
-      int max_peak = scale(get_max_peak(),min_db,max_db, box.y2, box.y1);
-
-      p->fillRect(box.x1, min_peak,
-                  box.x2-box.x1, max_peak-min_peak,
-                  col);      
+      p->fillRect(get_area_rect(box),col);
     }
 
+    void paint_peak_line(QPainter *p, const Box &box){
+      p->drawLine(get_line_line(box));
+    }
+
+    void paint_peak_line_between_boxes(QPainter *p, const Box &box1, Peaks *peaks2, const Box &box2){
+      p->drawLine(get_line_to_next_box(box1, peaks2, box2));
+    }
+
+    QRegion add_peaks(const Box &box, float peak){
+
+      QRegion reg_before = get_area_rect(box);
+
+      last_peak = peak;
+      //printf("adding peak %.2f. ",peak);
+      peaks[peak_pos] = peak;
+      peak_pos++;
+      if(peak_pos==num_peaks)
+        peak_pos=0;
+
+      set_min_max(box);
+
+      QRegion reg_after = get_area_rect(box);
+
+      return reg_before.xored(reg_after);
+    }
   };
 
   Peaks peaks_in;
   Peaks peaks_out;
   Peaks peaks_vol;
 
-  struct Timer : public QTimer{
-    Comp *_comp;
-    void timerEvent(QTimerEvent * e){
-      //printf("hepp\n");
-      _comp->update();
-    }
-  };
+  float in_peak_value;
+  float out_peak_value;
+  float vol_peak_value;
 
-  Timer timer;
+  void timerEvent(QTimerEvent * e){ // virtual method from QTimer
+    update_peaks();
+  }
 
   Comp(QWidget *parent)
     : QWidget(parent)
@@ -167,12 +247,13 @@ struct Comp : public QWidget{
     , vol_val2(def_threshold)
     , curr_slider(0)
   {
-    timer._comp = this;
-    timer.setInterval(k_timer_interval);
-    timer.start();
+    setInterval(k_timer_interval); // QTimer
+    start(); // QTimer
 
     set_threshold(def_threshold);
     set_compressor_parameters();
+
+    update_peaks();
   }
 
   int get_box_width(){
@@ -209,19 +290,28 @@ struct Comp : public QWidget{
 
   double get_threshold(){
     return scale(in_val2,
-                 0,1,
+                 in_val1,1,
                  max_db,min_db);
   }
 
   void set_threshold_gui(){
-    set_threshold(scale(get_compressor_parameter(THRESHOLD),max_db,min_db,0,1));
+    set_threshold(scale(get_compressor_parameter(THRESHOLD),max_db,min_db,in_val1,1));
   }
 
   double get_ratio(){
-    double ratio = fabs(in_val2-out_val1)<0.00001
-      ? 60 
-      : in_val2 / (in_val2-out_val1);
-    //printf("in_val2: %f, out_val1: %f, ratio: %f. (%f)\n",in_val2,out_val1,ratio,abs(in_val2-out_val1));
+    double len_in = in_val2-in_val1;
+    double len_out = out_val2-out_val1;
+
+    if(len_in==0.0 && len_out==0.0)
+      return 1.0;
+
+    if(len_out==0.0)
+      return 60;
+
+    double ratio = fabs(len_in-len_out)<0.00001
+                                        ? 1.0
+                                        : len_in / len_out;
+
     if(ratio>60)
       ratio=60;
     return ratio;
@@ -229,7 +319,10 @@ struct Comp : public QWidget{
 
   void set_ratio_gui(){
     double ratio = get_compressor_parameter(RATIO);
-    set_ratio(in_val2 - in_val2/ratio);
+    if(ratio<1.0){
+      set_ratio(scale(ratio,1,0,0,-1));
+    }else
+      set_ratio(out_val2 - out_val2/ratio);
   }
 
   double get_makeup_gain(){
@@ -238,10 +331,8 @@ struct Comp : public QWidget{
 
   // set_ratio must be called first.
   void set_makeup_gain_gui(){
-    //printf("out_val1: %f. vol: %f, scale: %f, min/max: %d/%d\n",out_val1,get_compressor_parameter(5),scale(get_compressor_parameter(5),min_db,max_db,0,1),(int)min_db,(int)max_db);
     float vol = get_compressor_parameter(OUTPUT_VOLUME);
     float addvol = scale(out_val1,0,1,max_db,min_db) + vol;
-    //printf("out_val1: %f. vol: %f, addvol: %f, scale: %f\n",out_val1,vol,addvol,scale(out_val1,0,1,max_db,min_db));
     set_makeupgain(scale(addvol,max_db,min_db,0,1));
   }
 
@@ -253,7 +344,7 @@ struct Comp : public QWidget{
   }
 
   void set_compressor_parameters(){
-    double input_volume = 1.0;
+    //double input_volume = 1.0;
     double threshold = get_threshold();
     double ratio = get_ratio();
     double output_volume = get_makeup_gain();
@@ -265,6 +356,7 @@ struct Comp : public QWidget{
     //set_compressor_parameter(4,input_volume);
     set_compressor_parameter(OUTPUT_VOLUME,output_volume);
 
+#if 0
     printf("%f / %f\n%f / %f\n%f / %f\ninput_volume:\t\t %.2f\n"
            "threshold:\t\t %f.2f\n"
            "ratio:\t\t\t %f.2f\n"
@@ -273,6 +365,7 @@ struct Comp : public QWidget{
            threshold,
            ratio,
            output_volume);
+#endif
   }
 
   enum{
@@ -298,15 +391,32 @@ struct Comp : public QWidget{
   void set_ratio(float val){
     double vol_diff = vol_val1 - out_val1;
     out_val1=val;
-    if(out_val1<0.0)
+    //    if(out_val1<0.0)
+    //    out_val1=0.0;
+    if(out_val1<0){
+      double threshold=get_compressor_parameter(THRESHOLD); //get_threshold();
+      double threshold_scaled=scale(threshold,max_db,min_db,0,1);
+      double ratio = scale(val,0,-1,1,0); //1.0 + val; // val is the out slider value, which goes from 0 to -1 when we are in expanding mode.
+      if(ratio<0.001)
+        ratio=0.001;
+      in_val1 = ((ratio-1)*threshold_scaled) / (ratio*threshold_scaled - ratio - threshold_scaled); // From: i1 = i2*(1-ratio), i2=scale(threshold_scaled,0,1,i1,1), i1=in_va1, i2=in_val2
       out_val1=0.0;
+      if(in_val1>0.999)
+        in_val1=0.999;
+      in_val2=scale(threshold,max_db,min_db,in_val1,1);
+      out_val2=in_val2;
+    }else{
+      in_val1=0.0;
+    }
     if(out_val1>in_val2-0.0001)
       out_val1=in_val2-0.0001;
     set_makeupgain(vol_diff + out_val1);
   }
 
   void set_threshold(float val){
-    double old_ratio_factor = out_val1 / in_val2;
+    //double bef=in_val2;
+    double old_inval1_scaled = scale(in_val1,0,in_val2,0,1);
+    double old_ratio_factor = out_val1 / (in_val2-in_val1);
 
     in_val2 = val;
     if(in_val2<=0.0)
@@ -315,14 +425,20 @@ struct Comp : public QWidget{
       in_val2=0.9999;
     
     out_val2 = in_val2;
-    set_ratio(old_ratio_factor*in_val2);
+
+    if(in_val1<=0.0){
+      set_ratio(old_ratio_factor*in_val2);
+    }else{
+      in_val1 = scale(old_inval1_scaled,0,1,0,in_val2);
+      //printf("b %.2f - %.2f. Bef: %.2f, now: %.2f\n",in_val1,old_inval1_scaled,bef,in_val2);
+    }
   }
 
   void handle_mouse_event ( QMouseEvent * event ){
     //printf("Got mouse press event %d / %d\n",(int)event->x(),(int)event->y());
 
     double new_val = p_startpos + scale(event->y()-y_startpos,0,height(),0,1);
-    printf("p_startpos: %f\n",p_startpos);
+    //printf("p_startpos: %f\n",p_startpos);
 
     switch(curr_slider){
     case THRESHOLD_SLIDER:
@@ -360,7 +476,11 @@ struct Comp : public QWidget{
     }else if(out_box.inside(x,y)){
 
       curr_slider = RATIO_SLIDER;
-      p_startpos = out_box.p1;
+      if(in_box.p1>0){
+        p_startpos = scale(in_box.p1,0,in_box.p2,0,-height());
+      }else{
+        p_startpos = out_box.p1;
+      }
 
     }else if(vol_box.inside(x,y)){
 
@@ -533,15 +653,46 @@ struct Comp : public QWidget{
     p->setPen(QPen());
   }
 
-  void paintPeaks(QPainter *p, const Box &in_box, const Box &out_box, const Box &vol_box){
-    float in_peak_value = get_graph_value(0);
-    float out_peak_value = in_peak_value + get_graph_value(1);
-    float vol_peak_value = out_peak_value + get_makeup_gain();
 
-    // 1. Lines
-    int in_peak = scale(in_peak_value,min_db,max_db, in_box.y2, in_box.y1);
-    int out_peak = scale(out_peak_value,min_db,max_db, out_box.y2, out_box.y1);
-    int vol_peak = scale(vol_peak_value,min_db,max_db, vol_box.y2, vol_box.y1);
+  // Called regularly
+  void update_peaks(){
+    Box in_box = get_slider1_parms();
+    Box out_box = get_slider2_parms();
+    Box vol_box = get_slider3_parms();
+
+    in_peak_value = get_graph_value(0);
+    out_peak_value = in_peak_value + get_graph_value(1);
+    vol_peak_value = out_peak_value + get_makeup_gain();
+
+    QRegion reg;
+
+    // update old boxes areas
+    reg = peaks_in.get_line_rect(in_box);
+    reg = reg.united(peaks_out.get_line_rect(out_box));
+    reg = reg.united(peaks_vol.get_line_rect(vol_box));
+
+    // update old lines between boxes
+    reg = reg.united(peaks_in.get_line_region(in_box,&peaks_out,out_box));
+    reg = reg.united(peaks_out.get_line_region(out_box,&peaks_vol,vol_box));
+
+    // Add new peaks, and update lines in boxes (both old and new)
+    reg = reg.united(peaks_in.add_peaks(in_box, scale(scale(in_peak_value,max_db,min_db,in_val1,1),0,1,max_db,min_db)));
+    reg = reg.united(peaks_out.add_peaks(out_box,scale(scale(out_peak_value,max_db,min_db,in_val1,1),0,1,max_db,min_db)));
+    reg = reg.united(peaks_vol.add_peaks(vol_box,scale(scale(vol_peak_value,max_db,min_db,in_val1,1),0,1,max_db,min_db)));
+
+    // update new lines between boxes
+    reg = reg.united(peaks_in.get_line_region(in_box,&peaks_out,out_box));
+    reg = reg.united(peaks_out.get_line_region(out_box,&peaks_vol,vol_box));
+
+    // update new boxes areas
+    reg = reg.united(peaks_in.get_line_rect(in_box));
+    reg = reg.united(peaks_out.get_line_rect(out_box));
+    reg = reg.united(peaks_vol.get_line_rect(vol_box));
+
+    update(reg);
+  }
+
+  void paintPeaks(QPainter *p, const Box &in_box, const Box &out_box, const Box &vol_box){
 
     {
       QColor col(0,90,180);
@@ -551,37 +702,36 @@ struct Comp : public QWidget{
       p->setPen(pen);
     }
 
-    // in
-    p->drawLine(in_box.x1, in_peak,
-                in_box.x2, in_peak);
+    // paint lines
+    {
+      // in
+      peaks_in.paint_peak_line(p, in_box);
+      
+      // between in and out
+      peaks_in.paint_peak_line_between_boxes(p, in_box, &peaks_out, out_box);
+      
+      // out
+      peaks_out.paint_peak_line(p, out_box);
+      
+      // between out and vol
+      peaks_out.paint_peak_line_between_boxes(p, out_box, &peaks_vol, vol_box);
+      
+      // vol
+      peaks_vol.paint_peak_line(p, vol_box);
+    }
 
-    // between in and out
-    p->drawLine(in_box.x2, in_peak,
-                out_box.x1, out_peak);
+    // paint areas
+    {
+      peaks_in.paint_peak_area(p,in_box);
+      peaks_out.paint_peak_area(p,out_box);
+      peaks_vol.paint_peak_area(p,vol_box);
+    }
 
-    // out
-    p->drawLine(out_box.x1, out_peak,
-                out_box.x2, out_peak);
-
-
-    // between out and vol
-    p->drawLine(out_box.x2, out_peak,
-                vol_box.x1, vol_peak);
-
-
-    // vol
-    p->drawLine(vol_box.x1, vol_peak,
-                vol_box.x2, vol_peak);
-
-
-    // 2. Areas
-    peaks_in.add_peaks(in_peak_value);
-    peaks_out.add_peaks(out_peak_value);
-    peaks_vol.add_peaks(vol_peak_value);
-
-    peaks_in.paint_peak_area(p,in_box);
-    peaks_out.paint_peak_area(p,out_box);
-    peaks_vol.paint_peak_area(p,vol_box);
+#if 0 // for checking that get_line_region returns correct value.
+    p->setPen(QPen());
+    p->drawPolygon(peaks_in.get_line_region(in_box,&peaks_out,out_box));
+    p->drawPolygon(peaks_out.get_line_region(out_box,&peaks_vol,vol_box));
+#endif
   }
 
   int get_text_width(QString text){
@@ -604,7 +754,7 @@ struct Comp : public QWidget{
                     : text+"\n"+value_text);
 
     }else{
-      // vercial
+      // vertical
 
       p->save();
       QPoint point(box.x1,box.y1); 
@@ -867,3 +1017,6 @@ public slots:
     fclose(file);
   }
 };
+
+} // anon. namespace
+

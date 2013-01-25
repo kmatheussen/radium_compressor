@@ -1,6 +1,6 @@
 //-----------------------------------------------------
 //
-// Code generated with Faust 0.9.55 (http://faust.grame.fr)
+// Code generated with Faust 0.9.46 (http://faust.grame.fr)
 //-----------------------------------------------------
 #ifndef FAUSTFLOAT
 #define FAUSTFLOAT float
@@ -11,9 +11,7 @@ typedef long double quad;
 #include "typepunning.h"
 #include <math.h>
 
-#ifndef FAUSTCLASS 
 #define FAUSTCLASS mydsp
-#endif
 
 class mydsp : public dsp {
   private:
@@ -43,17 +41,18 @@ class mydsp : public dsp {
 		m->declare("music.lib/author", "GRAME");
 		m->declare("music.lib/copyright", "GRAME");
 		m->declare("music.lib/version", "1.0");
-		m->declare("music.lib/license", "LGPL with exception");
+		m->declare("music.lib/license", "LGPL");
 		m->declare("math.lib/name", "Math Library");
 		m->declare("math.lib/author", "GRAME");
 		m->declare("math.lib/copyright", "GRAME");
 		m->declare("math.lib/version", "1.0");
-		m->declare("math.lib/license", "LGPL with exception");
+		m->declare("math.lib/license", "LGPL");
 		m->declare("effect.lib/name", "Faust Audio Effect Library");
 		m->declare("effect.lib/author", "Julius O. Smith (jos at ccrma.stanford.edu)");
 		m->declare("effect.lib/copyright", "Julius O. Smith III");
 		m->declare("effect.lib/version", "1.33");
 		m->declare("effect.lib/license", "STK-4.3");
+		m->declare("effect.lib/reference", "https://ccrma.stanford.edu/realsimple/faust_strings/");
 	}
 
 	virtual int getNumInputs() 	{ return 2; }
@@ -64,12 +63,12 @@ class mydsp : public dsp {
 		fSamplingFreq = samplingFreq;
 		fcheckbox0 = 0.0;
 		iConst0 = min(192000, max(1, fSamplingFreq));
-		fConst1 = (1.0f / float(iConst0));
+		fConst1 = (1.0f / iConst0);
 		fslider0 = 100.237f;
 		for (int i=0; i<4; i++) fRec2_perm[i]=0;
 		fslider1 = 50.148f;
 		for (int i=0; i<4; i++) fRec1_perm[i]=0;
-		fConst2 = (2.0f / float(iConst0));
+		fConst2 = (2.0f / iConst0);
 		fslider2 = -2e+01f;
 		fslider3 = 2.0f;
 		for (int i=0; i<4; i++) fRec0_perm[i]=0;
@@ -147,27 +146,27 @@ class mydsp : public dsp {
 			FAUSTFLOAT* output0 = &output[0][index];
 			FAUSTFLOAT* output1 = &output[1][index];
 			// SECTION : 1
-			// LOOP 0x227aee0
+			// LOOP 0x2071980
 			// exec code
 			for (int i=0; i<count; i++) {
 				fZec0[i] = ((iSlow0)?0:(float)input0[i]);
 			}
 			
-			// LOOP 0x227bfc0
+			// LOOP 0x2072a60
 			// exec code
 			for (int i=0; i<count; i++) {
 				fZec1[i] = ((iSlow0)?0:(float)input1[i]);
 			}
 			
 			// SECTION : 2
-			// LOOP 0x227ae00
+			// LOOP 0x20718a0
 			// exec code
 			for (int i=0; i<count; i++) {
 				fZec2[i] = fabsf((fabsf(fZec1[i]) + fabsf(fZec0[i])));
 			}
 			
 			// SECTION : 3
-			// LOOP 0x227aa90
+			// LOOP 0x2071530
 			// pre processing
 			for (int i=0; i<4; i++) fRec2_tmp[i]=fRec2_perm[i];
 			// exec code
@@ -178,7 +177,7 @@ class mydsp : public dsp {
 			for (int i=0; i<4; i++) fRec2_perm[i]=fRec2_tmp[count+i];
 			
 			// SECTION : 4
-			// LOOP 0x227a5b0
+			// LOOP 0x2071050
 			// pre processing
 			for (int i=0; i<4; i++) fRec1_tmp[i]=fRec1_perm[i];
 			// exec code
@@ -189,14 +188,14 @@ class mydsp : public dsp {
 			for (int i=0; i<4; i++) fRec1_perm[i]=fRec1_tmp[count+i];
 			
 			// SECTION : 5
-			// LOOP 0x2281eb0
+			// LOOP 0x20788f0
 			// exec code
 			for (int i=0; i<count; i++) {
 				fZec3[i] = (8.685889638065037f * ((8.262958288192749e-08f * float(pun_float_to_int(fRec1[i]))) - 87.989971088f));
 			}
 			
 			// SECTION : 6
-			// LOOP 0x2281970
+			// LOOP 0x20783b0
 			// exec code
 			for (int i=0; i<count; i++) {
 				fbargraph0 = fZec3[i];
@@ -204,7 +203,7 @@ class mydsp : public dsp {
 			}
 			
 			// SECTION : 7
-			// LOOP 0x227a1b0
+			// LOOP 0x2070c50
 			// pre processing
 			for (int i=0; i<4; i++) fRec0_tmp[i]=fRec0_perm[i];
 			// exec code
@@ -216,20 +215,20 @@ class mydsp : public dsp {
 			for (int i=0; i<4; i++) fRec0_perm[i]=fRec0_tmp[count+i];
 			
 			// SECTION : 8
-			// LOOP 0x2286020
+			// LOOP 0x207ca60
 			// exec code
 			for (int i=0; i<count; i++) {
-				fZec5[i] = pun_int_to_float((8388608 * (126.94269504f + max((float)-126, (0.16609640464202244f * fRec0[i])))));
+				fZec5[i] = pun_int_to_float((8388608 * (126.94269504f + max(-126.0f, (0.16609640464202244f * fRec0[i])))));
 			}
 			
 			// SECTION : 9
-			// LOOP 0x2279f80
+			// LOOP 0x2070a20
 			// exec code
 			for (int i=0; i<count; i++) {
 				output0[i] = (FAUSTFLOAT)((iSlow0)?(float)input0[i]:(fSlow10 * (fZec0[i] * fZec5[i])));
 			}
 			
-			// LOOP 0x2288010
+			// LOOP 0x207ea00
 			// exec code
 			for (int i=0; i<count; i++) {
 				output1[i] = (FAUSTFLOAT)((iSlow0)?(float)input1[i]:(fSlow10 * (fZec1[i] * fZec5[i])));
@@ -244,27 +243,27 @@ class mydsp : public dsp {
 			FAUSTFLOAT* output0 = &output[0][index];
 			FAUSTFLOAT* output1 = &output[1][index];
 			// SECTION : 1
-			// LOOP 0x227aee0
+			// LOOP 0x2071980
 			// exec code
 			for (int i=0; i<count; i++) {
 				fZec0[i] = ((iSlow0)?0:(float)input0[i]);
 			}
 			
-			// LOOP 0x227bfc0
+			// LOOP 0x2072a60
 			// exec code
 			for (int i=0; i<count; i++) {
 				fZec1[i] = ((iSlow0)?0:(float)input1[i]);
 			}
 			
 			// SECTION : 2
-			// LOOP 0x227ae00
+			// LOOP 0x20718a0
 			// exec code
 			for (int i=0; i<count; i++) {
 				fZec2[i] = fabsf((fabsf(fZec1[i]) + fabsf(fZec0[i])));
 			}
 			
 			// SECTION : 3
-			// LOOP 0x227aa90
+			// LOOP 0x2071530
 			// pre processing
 			for (int i=0; i<4; i++) fRec2_tmp[i]=fRec2_perm[i];
 			// exec code
@@ -275,7 +274,7 @@ class mydsp : public dsp {
 			for (int i=0; i<4; i++) fRec2_perm[i]=fRec2_tmp[count+i];
 			
 			// SECTION : 4
-			// LOOP 0x227a5b0
+			// LOOP 0x2071050
 			// pre processing
 			for (int i=0; i<4; i++) fRec1_tmp[i]=fRec1_perm[i];
 			// exec code
@@ -286,14 +285,14 @@ class mydsp : public dsp {
 			for (int i=0; i<4; i++) fRec1_perm[i]=fRec1_tmp[count+i];
 			
 			// SECTION : 5
-			// LOOP 0x2281eb0
+			// LOOP 0x20788f0
 			// exec code
 			for (int i=0; i<count; i++) {
 				fZec3[i] = (8.685889638065037f * ((8.262958288192749e-08f * float(pun_float_to_int(fRec1[i]))) - 87.989971088f));
 			}
 			
 			// SECTION : 6
-			// LOOP 0x2281970
+			// LOOP 0x20783b0
 			// exec code
 			for (int i=0; i<count; i++) {
 				fbargraph0 = fZec3[i];
@@ -301,7 +300,7 @@ class mydsp : public dsp {
 			}
 			
 			// SECTION : 7
-			// LOOP 0x227a1b0
+			// LOOP 0x2070c50
 			// pre processing
 			for (int i=0; i<4; i++) fRec0_tmp[i]=fRec0_perm[i];
 			// exec code
@@ -313,20 +312,20 @@ class mydsp : public dsp {
 			for (int i=0; i<4; i++) fRec0_perm[i]=fRec0_tmp[count+i];
 			
 			// SECTION : 8
-			// LOOP 0x2286020
+			// LOOP 0x207ca60
 			// exec code
 			for (int i=0; i<count; i++) {
-				fZec5[i] = pun_int_to_float((8388608 * (126.94269504f + max((float)-126, (0.16609640464202244f * fRec0[i])))));
+				fZec5[i] = pun_int_to_float((8388608 * (126.94269504f + max(-126.0f, (0.16609640464202244f * fRec0[i])))));
 			}
 			
 			// SECTION : 9
-			// LOOP 0x2279f80
+			// LOOP 0x2070a20
 			// exec code
 			for (int i=0; i<count; i++) {
 				output0[i] = (FAUSTFLOAT)((iSlow0)?(float)input0[i]:(fSlow10 * (fZec0[i] * fZec5[i])));
 			}
 			
-			// LOOP 0x2288010
+			// LOOP 0x207ea00
 			// exec code
 			for (int i=0; i<count; i++) {
 				output1[i] = (FAUSTFLOAT)((iSlow0)?(float)input1[i]:(fSlow10 * (fZec1[i] * fZec5[i])));

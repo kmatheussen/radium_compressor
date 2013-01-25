@@ -145,7 +145,7 @@ pun_int_to_float = ffunction(float pun_int_to_float(int), "typepunning.h", "");
 pun_float_to_int = ffunction(float pun_float_to_int(int), "typepunning.h", "");
 
 ll2_pow2(x) = pun_int_to_float(( (1 << 23) * (clipp + 126.94269504))) with{
-    clipp = max(-126,x);
+    clipp = max(-126.0,x);
 };
 
 ll2_exp(x) = ll2_pow2(1.442695040*x);

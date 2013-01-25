@@ -158,7 +158,7 @@ MyUI *ui;
 static void set_compressor_parameter(int num,float value){
   float *controller = ui->_controllers.at(num);
   *controller = value;
-  printf("Setting controller %d (%p) to %f (%f)\n",num,controller,value,*controller);
+  //printf("Setting controller %d (%p) to %f (%f)\n",num,controller,value,*controller);
 }
 
 static float get_compressor_parameter(int num){

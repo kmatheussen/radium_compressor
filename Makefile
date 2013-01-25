@@ -1,3 +1,7 @@
+PREFIX ?= /usr/local
+bindir ?= $(PREFIX)/bin
+libdir ?= $(PREFIX)/lib
+
 
 # These two commands are used by me, since most of the source files are stored in the Radium tree.
 # To compile this program, just running "make" should be enough.
@@ -8,7 +12,8 @@
 
 CPP = g++ -DDEBUG -O3 -Wall -msse -mfpmath=sse -DUSE_QT_REQTYPE -DUSE_QT4 -g -I. -ffast-math -IQt
 
-FAUST = /home/kjetil/faudiostream/compiler/faust -vec
+#FAUST = /home/kjetil/faudiostream/compiler/faust -vec
+FAUST = faust -vec
 
 # only used for copy files
 RADIUM_PATH = /home/kjetil/radium-qt4
@@ -17,6 +22,15 @@ all: audio/system_compressor.cpp
 	cd Qt && ./create_source_from_ui.sh `../find_moc_and_uic_paths.sh uic` `../find_moc_and_uic_paths.sh moc` compressor_widget
 	$(CPP) Qt/Qt_SliderPainter.cpp `pkg-config --cflags Qt3Support` -c
 	$(CPP) main.cpp Qt_SliderPainter.o -Iaudio/faudiostream/architecture/ `pkg-config --libs --cflags Qt3Support` -ljack -o radium_compressor
+
+
+install:
+	install -d $(DESTDIR)$(bindir)
+	cp radium_compressor $(DESTDIR)$(bindir)/
+
+
+uninstall:
+	rm -f $(DESTDIR)$(bindir)/radium_compressor
 
 
 copy_files:
@@ -65,8 +79,8 @@ audio/system_compressor.cpp: audio/system_compressor.dsp
 	$(FAUST) audio/system_compressor.dsp >audio/system_compressor.cpp
 
 benchmark:
-	$(FAUST) -a bench.cpp system_compressor.dsp >compressor_benchmark.cpp
-	g++ benchmark.cpp $(OPTS) -o benchmark -lpthread
+	$(FAUST) -a bench.cpp audio/system_compressor.dsp >compressor_benchmark.cpp 
+	$(CPP) benchmark.cpp -Iaudio -o benchmark -lpthread
 
 # original db2linear/linear2db: 60 MB/s
 # fast pow2/log: 420 MB/s
