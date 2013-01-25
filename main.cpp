@@ -20,7 +20,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA. */
 
 #include "audio/faudiostream/architecture/faust/audio/dsp.h"
 #include "audio/faudiostream/architecture/faust/gui/UI.h"
-#include "audio/faudiostream/architecture/faust/audio/jack-dsp.h"
+#include "myjack-dsp.h"
 
 #include <vector>
 
