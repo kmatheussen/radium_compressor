@@ -768,7 +768,7 @@ struct Comp : public QWidget, public QTimer{
 
     QRegion reg;
 
-    // update old boxes areas
+    // update old line boxes
     reg = peaks_in.get_line_rect(in_box);
     reg = reg.united(peaks_out.get_line_rect(out_box));
     reg = reg.united(peaks_vol.get_line_rect(vol_box));
@@ -777,7 +777,7 @@ struct Comp : public QWidget, public QTimer{
     reg = reg.united(peaks_in.get_line_region(in_box,&peaks_out,out_box));
     reg = reg.united(peaks_out.get_line_region(out_box,&peaks_vol,vol_box));
 
-    // Add new peaks, and update lines in boxes (both old and new)
+    // Add new peaks, and update areas in boxes (both old and new)
     reg = reg.united(peaks_in.add_peaks(in_box, scale(scale(in_peak_value,max_db,min_db,in_val1,1),0,1,max_db,min_db)));
     reg = reg.united(peaks_out.add_peaks(out_box,scale(scale(out_peak_value,max_db,min_db,in_val1,1),0,1,max_db,min_db)));
     reg = reg.united(peaks_vol.add_peaks(vol_box,scale(scale(vol_peak_value,max_db,min_db,in_val1,1),0,1,max_db,min_db)));
@@ -786,7 +786,7 @@ struct Comp : public QWidget, public QTimer{
     reg = reg.united(peaks_in.get_line_region(in_box,&peaks_out,out_box));
     reg = reg.united(peaks_out.get_line_region(out_box,&peaks_vol,vol_box));
 
-    // update new boxes areas
+    // update new line boxes
     reg = reg.united(peaks_in.get_line_rect(in_box));
     reg = reg.united(peaks_out.get_line_rect(out_box));
     reg = reg.united(peaks_vol.get_line_rect(vol_box));

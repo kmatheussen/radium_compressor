@@ -230,14 +230,15 @@ int main(int argc, char **argv){
   set_colors();
 
   d = new mydsp;
-  d->init(44100);
-  ui = new MyUI;
-  d->buildUserInterface(ui);
+  //d->init(44100); // d->init is called in audio.init.
   
   jackaudio audio;
   audio.init(jack_client_name, d);
   //finterface->recallState(rcfilename);	
   audio.start(autoconnect);
+
+  ui = new MyUI;
+  d->buildUserInterface(ui);
 
   Compressor_widget compressor;
   if(settings_filename!=NULL)
