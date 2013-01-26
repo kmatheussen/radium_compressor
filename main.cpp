@@ -24,6 +24,20 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA. */
 
 #include <vector>
 
+#define OPTARGS_CHECK_GET(wrong,right) lokke==argc-1?(fprintf(stderr,"Must supply argument for '%s'\n",argv[lokke]),exit(-4),wrong):right
+
+#define OPTARGS_BEGIN(das_usage) {int lokke;const char *usage=das_usage;for(lokke=1;lokke<argc;lokke++){char *a=argv[lokke];if(!strcmp("--help",a)||!strcmp("-h",a)){fprintf(stderr,"%s",usage);exit(0);
+#define OPTARG(name,name2) }}else if(!strcmp(name,a)||!strcmp(name2,a)){{
+#define OPTARG_GETINT() OPTARGS_CHECK_GET(0,atoll(argv[++lokke]))
+//int optargs_inttemp;
+//#define OPTARG_GETINT() OPTARGS_CHECK_GET(0,(optargs_inttemp=strtol(argv[++lokke],(char**)NULL,10),errno!=0?(perror("strtol"),0):optargs_inttemp))
+#define OPTARG_GETFLOAT() OPTARGS_CHECK_GET(0.0f,atof(argv[++lokke]))
+#define OPTARG_GETSTRING() OPTARGS_CHECK_GET("",argv[++lokke])
+#define OPTARG_LAST() }}else if(lokke==argc-1 && argv[lokke][0]!='-'){lokke--;{
+#define OPTARGS_ELSE() }else if(1){
+#define OPTARGS_END }else{fprintf(stderr,"%s",usage);exit(-1);}}}
+
+
 struct Meta
 {
     void declare (const char* key, const char* value) { }
@@ -193,16 +207,24 @@ static void set_colors(void){
 }
 
 int main(int argc, char **argv){
-  if(argc>1)
-    if(!strcmp(argv[1],"-help")
-       || !strcmp(argv[1],"--help")
-       || !strcmp(argv[1],"-h")
-       )
-      {
-        printf("radium_compressor <settings filename>\n");
-        exit(0);
-      }
-      
+  const char *settings_filename = NULL;
+  bool autoconnect = false;
+  const char *jack_client_name = "radium_compressor";
+
+  OPTARGS_BEGIN("radium_compressor [--autoconnect] [--client-name s] [--settings-filename s] [settings-filename]\n"
+                "                  [ -ac         ] [ -cn          s] [ -sn                s] [settings filename]\n"
+                "\n"
+                "\"autoconnect\"       connects radium_compressor to physical in and out ports.\n"
+                "\"client-name\"       sets the name of the jack client.\n"
+                "\"settings-filename\" is the name of a settings file to load at startup.\n"
+                )
+    {
+
+      OPTARG("--settings-filename","-sn") settings_filename=OPTARG_GETSTRING();
+      OPTARG("--autoconnect","-ac") autoconnect=true;
+      OPTARG("--client-name","-cn") jack_client_name=OPTARG_GETSTRING();
+      OPTARG_LAST() settings_filename=OPTARG_GETSTRING();
+    }OPTARGS_END;
 
   QApplication app(argc, argv);
   set_colors();
@@ -213,13 +235,13 @@ int main(int argc, char **argv){
   d->buildUserInterface(ui);
   
   jackaudio audio;
-  audio.init("das compressor", d);
+  audio.init(jack_client_name, d);
   //finterface->recallState(rcfilename);	
-  audio.start();
+  audio.start(autoconnect);
 
   Compressor_widget compressor;
-  if(argc>1)
-    compressor.load(argv[1]);
+  if(settings_filename!=NULL)
+    compressor.load(settings_filename);
 
   compressor.show();
 

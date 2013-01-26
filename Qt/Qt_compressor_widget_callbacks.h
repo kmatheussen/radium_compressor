@@ -24,6 +24,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA. */
 
 #include "Qt_compressor_widget.h"
 
+#define GLIDING_PEAK_AREA 0
+
 const int min_db = -40;
 const int max_db = 40;
 
@@ -101,11 +103,17 @@ struct Comp : public QWidget, public QTimer{
     int peak_pos;
     float last_peak;
 
+#if GLIDING_PEAK_AREA
+    float min_peak_db, max_peak_db; // in dB
+#endif
     int min_peak, max_peak; // in pixels
     
     Peaks()
       : peak_pos(0)
       , last_peak(0)
+#if GLIDING_PEAK_AREA
+      , min_peak_db(0), max_peak_db(0)
+#endif
       , min_peak(0)
       , max_peak(0)
     {
@@ -129,10 +137,46 @@ struct Comp : public QWidget, public QTimer{
       return ret;
     }
 
+
+#if GLIDING_PEAK_AREA
+    // Trying gliding area instead of array. IMO it is less clear, and it also uses more CPU because of more gfx updates.
+   void update_peaks(const Box &box, float peak){
+      const float inc = 0.25;
+
+      if(peak>max_peak_db)
+        max_peak_db = peak;
+      else
+        max_peak_db = max_peak_db - inc;
+  
+      if(peak<min_peak_db)
+        min_peak_db = peak;
+      else
+        min_peak_db = min_peak_db + inc;
+      
+      if(min_peak_db < min_db)
+        min_peak_db = min_db;
+
+      if(max_peak_db > max_db)
+        max_peak_db = max_db;
+
+      if(min_peak_db>max_peak_db)
+        min_peak_db=max_peak_db;
+
+      //if(box.x1<50)
+      //  printf("min_peak_db: %f\n",min_peak_db);
+
+      min_peak = scale(min_peak_db,min_db,max_db, box.y2, box.y1);
+      max_peak = scale(max_peak_db,min_db,max_db, box.y2, box.y1);
+    }
+
+#else
+
     void set_min_max(const Box &box){
       min_peak = scale(get_min_peak(),min_db,max_db, box.y2, box.y1);
       max_peak = scale(get_max_peak(),min_db,max_db, box.y2, box.y1);
     }
+
+#endif
 
     const int get_y_pixel(const Box &box){
       return scale(last_peak,min_db,max_db, box.y2, box.y1);
@@ -145,8 +189,42 @@ struct Comp : public QWidget, public QTimer{
 
     const QLine get_line_to_next_box(const Box &box1, Peaks *peaks2, const Box &box2){
       Peaks *peaks1 = this;
-      return QLine(box1.x2,peaks1->get_y_pixel(box1),
-                   box2.x1,peaks2->get_y_pixel(box2));
+      int x1=box1.x2;
+      int y1=peaks1->get_y_pixel(box1);
+      int x2=box2.x1;
+      int y2=peaks2->get_y_pixel(box2);
+
+      if(y1 < box1.y1){
+        x1=scale(box1.y1, y1,y2, x1,x2);
+        y1=box1.y1 - 10; // FIX. why is - 10 needed?
+      }
+
+      if(y2 < box2.y1){
+        x2=scale(box2.y1, y1,y2, x1,x2);
+        y2=box2.y1 - 10;
+      }
+
+      if(y1 > box1.y2){
+        x1=scale(box1.y2, y1,y2, x1,x2);
+        y1=box1.y2 + 10;
+      }
+
+      if(y2 > box2.y2){
+        x2=scale(box2.y2, y1,y2, x1,x2);
+        y2=box2.y2 + 10;
+      }
+
+      if(x1<box1.x2)
+        x1=10000;
+      if(x1>box2.x1)
+        x1=10000;
+      if(x2<box1.x2)
+        x1=10000;
+      if(x2>box2.x1)
+        x1=10000;
+
+
+      return QLine(x1,y1,x2,y2);
     }
 
     // For lines in boxes (those lines are always horizontal)
@@ -157,9 +235,15 @@ struct Comp : public QWidget, public QTimer{
 
     // For the lines between boxes.
     const QPolygon get_line_region(const Box &box1, Peaks *peaks2, const Box &box2){
-      Peaks *peaks1 = this;
-      const QLine line1 = peaks1->get_line_line(box1);
-      const QLine line2 = peaks2->get_line_line(box2);
+      const QLine line = get_line_to_next_box(box1,peaks2,box2);
+
+      int x1=line.x1();
+      int y1=line.y1();
+      int x2=line.x2();
+      int y2=line.y2();
+
+      if(x1==10000)
+        return QPolygon(); // Line is not painted.
 
 #if 0
       double degree = 3.14159265359/2.0 - atan( (double)(line2.y1() - line1.y2()) / (double)(line2.x1() - line1.x2()));
@@ -167,10 +251,10 @@ struct Comp : public QWidget, public QTimer{
       //printf("degree: %f, h: %d\n",degree*57.2957795,h);
 #else
       // optimized:
-      int h_square = line2.y1() - line1.y2();
+      int h_square = y2 - y1;
       h_square *= h_square;
 
-      int w_square = line2.x1() - line1.x2();
+      int w_square = x2 - x1;
       w_square *= w_square;
 
       int h = ceil(4.0/2.0 * sqrt((double)h_square/(double)w_square + 1.0)); // "4.0" is the pen width.
@@ -178,10 +262,10 @@ struct Comp : public QWidget, public QTimer{
 
       QPolygon poly(4);
 
-      poly.setPoint(0,line1.x2(), line1.y2()-h);
-      poly.setPoint(1,line1.x2(), line1.y2()+h);
-      poly.setPoint(2,line2.x1(), line2.y1()+h);
-      poly.setPoint(3,line2.x1(), line2.y1()-h);
+      poly.setPoint(0, x1, y1-h);
+      poly.setPoint(1, x1, y1+h);
+      poly.setPoint(2, x2, y2+h);
+      poly.setPoint(3, x2, y2-h);
 
       return poly;
     }
@@ -203,12 +287,21 @@ struct Comp : public QWidget, public QTimer{
     }
 
     void paint_peak_line_between_boxes(QPainter *p, const Box &box1, Peaks *peaks2, const Box &box2){
-      p->drawLine(get_line_to_next_box(box1, peaks2, box2));
+      const QLine line = get_line_to_next_box(box1, peaks2, box2); 
+      if(line.x1()==10000)
+        return;
+
+      p->drawLine(line);
     }
 
     QRegion add_peaks(const Box &box, float peak){
 
       QRegion reg_before = get_area_rect(box);
+
+      if(peak<-1000)
+        peak=-1000;
+      if(peak>1000)
+        peak=1000;
 
       last_peak = peak;
       //printf("adding peak %.2f. ",peak);
@@ -217,7 +310,11 @@ struct Comp : public QWidget, public QTimer{
       if(peak_pos==num_peaks)
         peak_pos=0;
 
+#if USE_GLIDING_PEAK_AREA
+      update_peaks(box,peak);
+#else
       set_min_max(box);
+#endif
 
       QRegion reg_after = get_area_rect(box);
 
@@ -378,6 +475,7 @@ struct Comp : public QWidget, public QTimer{
   int y_startpos;
 
   void set_makeupgain(float val){
+    //double old = vol_val2;
     vol_val1=val;
 #if 0 // allow this.
     if(vol_val1<0.0)
@@ -386,6 +484,7 @@ struct Comp : public QWidget, public QTimer{
     if(vol_val1>0.9999)
       vol_val1=0.9999;
     vol_val2 = vol_val1 + (out_val2-out_val1);// scale(out_val2, out_val1, 1.0, vol_val1, 1.0);
+    //printf("setting makeupgain to %f. old/new vol_val2: %f / %f\n",val,vol_val2,old);
   }
 
   void set_ratio(float val){
@@ -393,6 +492,7 @@ struct Comp : public QWidget, public QTimer{
     out_val1=val;
     //    if(out_val1<0.0)
     //    out_val1=0.0;
+
     if(out_val1<0){
       double threshold=get_compressor_parameter(THRESHOLD); //get_threshold();
       double threshold_scaled=scale(threshold,max_db,min_db,0,1);
@@ -410,6 +510,7 @@ struct Comp : public QWidget, public QTimer{
     }
     if(out_val1>in_val2-0.0001)
       out_val1=in_val2-0.0001;
+
     set_makeupgain(vol_diff + out_val1);
   }
 
@@ -430,6 +531,7 @@ struct Comp : public QWidget, public QTimer{
       set_ratio(old_ratio_factor*in_val2);
     }else{
       in_val1 = scale(old_inval1_scaled,0,1,0,in_val2);
+      set_makeupgain(vol_val1);
       //printf("b %.2f - %.2f. Bef: %.2f, now: %.2f\n",in_val1,old_inval1_scaled,bef,in_val2);
     }
   }

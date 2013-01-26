@@ -68,28 +68,31 @@ class jackaudio : public audio {
 		return true;
 	}
 
-	virtual bool start() {
+	virtual bool start(bool autoconnect) {
 		if (jack_activate(fClient)) {
 			fprintf(stderr, "cannot activate client");
 			return false;
 		}
 
-#if 0 // dont want to autoconnect in this program. -Kjetil
-
-		char** physicalInPorts = (char **)jack_get_ports(fClient, NULL, NULL, JackPortIsPhysical|JackPortIsInput);
-		char** physicalOutPorts = (char **)jack_get_ports(fClient, NULL, NULL, JackPortIsPhysical|JackPortIsOutput);
-		if (physicalOutPorts != NULL) {
-			for (int i = 0; i < fNumInChans && physicalOutPorts[i]; i++)
-				jack_connect(fClient, physicalOutPorts[i], jack_port_name(fInput_ports[i]));
-		}
-		if (physicalInPorts != NULL) {
-			for (int i = 0; i < fNumOutChans && physicalInPorts[i]; i++)
-				jack_connect(fClient, jack_port_name(fOutput_ports[i]), physicalInPorts[i]);
-		}
-#endif
+                if(autoconnect){
+                  char** physicalInPorts = (char **)jack_get_ports(fClient, NULL, NULL, JackPortIsPhysical|JackPortIsInput);
+                  char** physicalOutPorts = (char **)jack_get_ports(fClient, NULL, NULL, JackPortIsPhysical|JackPortIsOutput);
+                  if (physicalOutPorts != NULL) {
+                    for (int i = 0; i < fNumInChans && physicalOutPorts[i]; i++)
+                      jack_connect(fClient, physicalOutPorts[i], jack_port_name(fInput_ports[i]));
+                  }
+                  if (physicalInPorts != NULL) {
+                    for (int i = 0; i < fNumOutChans && physicalInPorts[i]; i++)
+                      jack_connect(fClient, jack_port_name(fOutput_ports[i]), physicalInPorts[i]);
+                  }
+                }
 
 		return true;
 	}
+
+        virtual bool start(){
+          return start(true);
+        }
 
 	virtual void stop() {
 		if (fClient) {

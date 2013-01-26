@@ -4,7 +4,7 @@ libdir ?= $(PREFIX)/lib
 
 
 # These two commands are used by me, since most of the source files are stored in the Radium tree.
-# To compile this program, just running "make" should be enough.
+# You would normally just run "make" to compile the program.
 #
 # make copy_files && make all && ./radium_compressor 
 # make copy_files && rm -f benchmark && make benchmark && ./benchmark && ./benchmark && ./benchmark
@@ -78,6 +78,9 @@ copy_files:
 audio/system_compressor.cpp: audio/system_compressor.dsp
 	$(FAUST) audio/system_compressor.dsp >audio/system_compressor.cpp
 
+# Note that 0.9.55 runs the benchmark program a bit faster than 0.9.46.
+# I guess it's because of more min/max functions in 0.9.55, but it could also
+# be because of some castings.
 benchmark:
 	$(FAUST) -a bench.cpp audio/system_compressor.dsp >compressor_benchmark.cpp 
 	$(CPP) benchmark.cpp -Iaudio -o benchmark -lpthread
