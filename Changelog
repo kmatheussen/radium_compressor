@@ -1,4 +1,9 @@
 
+0.5.0 -> 0.5.1:
+* Dont call init twice, and use correct samplerate
+
+
+0.0.1 -> 0.5.0
 * Don't autoconnect jack ports by default
 * Option to set jack client name
 * Faster graphics
