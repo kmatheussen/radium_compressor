@@ -1,2 +1,7 @@
 
-	
+* Don't autoconnect jack ports by default
+* Option to set jack client name
+* Faster graphics
+* Graphics use less CPU
+* Support for ratios between 0 and 1
+
