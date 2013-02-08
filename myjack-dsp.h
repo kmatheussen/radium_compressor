@@ -2,6 +2,7 @@
 #ifndef __jack_dsp__
 #define __jack_dsp__
 
+#include <cstdlib>
 #include <stdio.h>
 #include <jack/jack.h>
 #include "faust/audio/audio.h"

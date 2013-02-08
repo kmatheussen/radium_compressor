@@ -10,6 +10,12 @@
     <height>412</height>
    </rect>
   </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+    <horstretch>0</horstretch>
+    <verstretch>1</verstretch>
+   </sizepolicy>
+  </property>
   <property name="windowTitle">
    <string>Radium Compressor</string>
   </property>
@@ -53,13 +59,26 @@
      <item>
       <widget class="QCheckBox" name="bypass">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
        <property name="text">
         <string>Bypass</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="enable_checkbox">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Enable</string>
        </property>
       </widget>
      </item>
@@ -93,6 +112,9 @@
    </item>
    <item>
     <widget class="QSlider" name="attack_slider">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="maximum">
       <number>1000</number>
      </property>
@@ -103,6 +125,9 @@
    </item>
    <item>
     <widget class="QSlider" name="release_slider">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="maximum">
       <number>1000</number>
      </property>

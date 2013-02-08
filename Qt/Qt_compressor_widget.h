@@ -31,6 +31,7 @@ public:
     QHBoxLayout *horizontalLayout;
     QLabel *radium_url;
     MyQCheckBox *bypass;
+    MyQCheckBox *enable_checkbox;
     MyQButton *load_button;
     MyQButton *save_button;
     MyQSlider *attack_slider;
@@ -41,6 +42,11 @@ public:
         if (Compressor_widget->objectName().isEmpty())
             Compressor_widget->setObjectName(QString::fromUtf8("Compressor_widget"));
         Compressor_widget->resize(385, 412);
+        QSizePolicy sizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+        sizePolicy.setHorizontalStretch(0);
+        sizePolicy.setVerticalStretch(1);
+        sizePolicy.setHeightForWidth(Compressor_widget->sizePolicy().hasHeightForWidth());
+        Compressor_widget->setSizePolicy(sizePolicy);
         verticalLayout = new QVBoxLayout(Compressor_widget);
         verticalLayout->setSpacing(0);
         verticalLayout->setContentsMargins(0, 0, 0, 0);
@@ -52,11 +58,11 @@ public:
         horizontalLayout->setContentsMargins(-1, -1, -1, 2);
         radium_url = new QLabel(Compressor_widget);
         radium_url->setObjectName(QString::fromUtf8("radium_url"));
-        QSizePolicy sizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-        sizePolicy.setHorizontalStretch(0);
-        sizePolicy.setVerticalStretch(0);
-        sizePolicy.setHeightForWidth(radium_url->sizePolicy().hasHeightForWidth());
-        radium_url->setSizePolicy(sizePolicy);
+        QSizePolicy sizePolicy1(QSizePolicy::Fixed, QSizePolicy::Fixed);
+        sizePolicy1.setHorizontalStretch(0);
+        sizePolicy1.setVerticalStretch(0);
+        sizePolicy1.setHeightForWidth(radium_url->sizePolicy().hasHeightForWidth());
+        radium_url->setSizePolicy(sizePolicy1);
         radium_url->setAlignment(Qt::AlignCenter);
         radium_url->setOpenExternalLinks(true);
 
@@ -64,25 +70,32 @@ public:
 
         bypass = new MyQCheckBox(Compressor_widget);
         bypass->setObjectName(QString::fromUtf8("bypass"));
-        QSizePolicy sizePolicy1(QSizePolicy::Minimum, QSizePolicy::Minimum);
-        sizePolicy1.setHorizontalStretch(0);
-        sizePolicy1.setVerticalStretch(0);
-        sizePolicy1.setHeightForWidth(bypass->sizePolicy().hasHeightForWidth());
-        bypass->setSizePolicy(sizePolicy1);
+        QSizePolicy sizePolicy2(QSizePolicy::Minimum, QSizePolicy::Fixed);
+        sizePolicy2.setHorizontalStretch(0);
+        sizePolicy2.setVerticalStretch(0);
+        sizePolicy2.setHeightForWidth(bypass->sizePolicy().hasHeightForWidth());
+        bypass->setSizePolicy(sizePolicy2);
 
         horizontalLayout->addWidget(bypass);
 
+        enable_checkbox = new MyQCheckBox(Compressor_widget);
+        enable_checkbox->setObjectName(QString::fromUtf8("enable_checkbox"));
+        sizePolicy2.setHeightForWidth(enable_checkbox->sizePolicy().hasHeightForWidth());
+        enable_checkbox->setSizePolicy(sizePolicy2);
+
+        horizontalLayout->addWidget(enable_checkbox);
+
         load_button = new MyQButton(Compressor_widget);
         load_button->setObjectName(QString::fromUtf8("load_button"));
-        sizePolicy.setHeightForWidth(load_button->sizePolicy().hasHeightForWidth());
-        load_button->setSizePolicy(sizePolicy);
+        sizePolicy1.setHeightForWidth(load_button->sizePolicy().hasHeightForWidth());
+        load_button->setSizePolicy(sizePolicy1);
 
         horizontalLayout->addWidget(load_button);
 
         save_button = new MyQButton(Compressor_widget);
         save_button->setObjectName(QString::fromUtf8("save_button"));
-        sizePolicy.setHeightForWidth(save_button->sizePolicy().hasHeightForWidth());
-        save_button->setSizePolicy(sizePolicy);
+        sizePolicy1.setHeightForWidth(save_button->sizePolicy().hasHeightForWidth());
+        save_button->setSizePolicy(sizePolicy1);
 
         horizontalLayout->addWidget(save_button);
 
@@ -91,6 +104,7 @@ public:
 
         attack_slider = new MyQSlider(Compressor_widget);
         attack_slider->setObjectName(QString::fromUtf8("attack_slider"));
+        attack_slider->setEnabled(false);
         attack_slider->setMaximum(1000);
         attack_slider->setOrientation(Qt::Horizontal);
 
@@ -98,6 +112,7 @@ public:
 
         release_slider = new MyQSlider(Compressor_widget);
         release_slider->setObjectName(QString::fromUtf8("release_slider"));
+        release_slider->setEnabled(false);
         release_slider->setMaximum(1000);
         release_slider->setOrientation(Qt::Horizontal);
 
@@ -114,6 +129,7 @@ public:
         Compressor_widget->setWindowTitle(QApplication::translate("Compressor_widget", "Radium Compressor", 0, QApplication::UnicodeUTF8));
         radium_url->setText(QApplication::translate("Compressor_widget", "<A href=\"http://users.notam02.no/~kjetism/radium/\">Radium</A>", 0, QApplication::UnicodeUTF8));
         bypass->setText(QApplication::translate("Compressor_widget", "Bypass", 0, QApplication::UnicodeUTF8));
+        enable_checkbox->setText(QApplication::translate("Compressor_widget", "Enable", 0, QApplication::UnicodeUTF8));
         load_button->setText(QApplication::translate("Compressor_widget", "Load", 0, QApplication::UnicodeUTF8));
         save_button->setText(QApplication::translate("Compressor_widget", "Save", 0, QApplication::UnicodeUTF8));
     } // retranslateUi

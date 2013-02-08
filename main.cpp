@@ -18,9 +18,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA. */
 #include <math.h>
 #include <string>
 
-#include "audio/faudiostream/architecture/faust/audio/dsp.h"
-#include "audio/faudiostream/architecture/faust/gui/UI.h"
-#include "myjack-dsp.h"
+//#include "audio/faudiostream/architecture/faust/gui/UI.h"
 
 #include <vector>
 
@@ -37,153 +35,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA. */
 #define OPTARGS_ELSE() }else if(1){
 #define OPTARGS_END }else{fprintf(stderr,"%s",usage);exit(-1);}}}
 
-
-struct Meta
-{
-    void declare (const char* key, const char* value) { }
-};
-
-inline int 	max (unsigned int a, unsigned int b) { return (a>b) ? a : b; }
-inline int 	max (int a, int b)		{ return (a>b) ? a : b; }
-
-inline long 	max (long a, long b) 		{ return (a>b) ? a : b; }
-inline long 	max (int a, long b) 		{ return (a>b) ? a : b; }
-inline long 	max (long a, int b) 		{ return (a>b) ? a : b; }
-
-inline float 	max (float a, float b) 		{ return (a>b) ? a : b; }
-inline float 	max (int a, float b) 		{ return (a>b) ? a : b; }
-inline float 	max (float a, int b) 		{ return (a>b) ? a : b; }
-inline float 	max (long a, float b) 		{ return (a>b) ? a : b; }
-inline float 	max (float a, long b) 		{ return (a>b) ? a : b; }
-
-inline double 	max (double a, double b) 	{ return (a>b) ? a : b; }
-inline double 	max (int a, double b) 		{ return (a>b) ? a : b; }
-inline double 	max (double a, int b) 		{ return (a>b) ? a : b; }
-inline double 	max (long a, double b) 		{ return (a>b) ? a : b; }
-inline double 	max (double a, long b) 		{ return (a>b) ? a : b; }
-inline double 	max (float a, double b) 	{ return (a>b) ? a : b; }
-inline double 	max (double a, float b) 	{ return (a>b) ? a : b; }
-
-
-inline int	min (int a, int b)		{ return (a<b) ? a : b; }
-
-inline long 	min (long a, long b) 		{ return (a<b) ? a : b; }
-inline long 	min (int a, long b) 		{ return (a<b) ? a : b; }
-inline long 	min (long a, int b) 		{ return (a<b) ? a : b; }
-
-inline float 	min (float a, float b) 		{ return (a<b) ? a : b; }
-inline float 	min (int a, float b) 		{ return (a<b) ? a : b; }
-inline float 	min (float a, int b) 		{ return (a<b) ? a : b; }
-inline float 	min (long a, float b) 		{ return (a<b) ? a : b; }
-inline float 	min (float a, long b) 		{ return (a<b) ? a : b; }
-
-inline double 	min (double a, double b) 	{ return (a<b) ? a : b; }
-inline double 	min (int a, double b) 		{ return (a<b) ? a : b; }
-inline double 	min (double a, int b) 		{ return (a<b) ? a : b; }
-inline double 	min (long a, double b) 		{ return (a<b) ? a : b; }
-inline double 	min (double a, long b) 		{ return (a<b) ? a : b; }
-inline double 	min (float a, double b) 	{ return (a<b) ? a : b; }
-inline double 	min (double a, float b) 	{ return (a<b) ? a : b; }
-
 #include "common/nsmtracker.h"
 #include "Qt/Qt_MyQCheckBox.h"
 #include "Qt/Qt_MyQSlider.h"
 #include "Qt/Qt_MyQButton.h"
-#include "audio/system_compressor.cpp"
-
- 
-static inline double scale_double(double x, double x1, double x2, double y1, double y2){
-  return y1 + ( ((x-x1)*(y2-y1))
-                /
-                (x2-x1)
-                );
-}
 
 static QColor das_colors[16];
 QColor *g_colors=&das_colors[0];
-
-class MyUI : public UI
-{
-
- public:
-  void declare(float* control_port, const char* key, const char* value) {
-  }
-
-  const char *_curr_box_name;
-
-  void openFrameBox(const char* label) {_curr_box_name = label;}
-  void openTabBox(const char* label) {_curr_box_name = label;}
-  void openHorizontalBox(const char* label) {_curr_box_name = label;}
-  void openVerticalBox(const char* label) {_curr_box_name = label;}
-  void closeBox() {_curr_box_name = NULL;}
-
-  std::vector<float*> _controllers;
-  std::vector<float*> _graphs;
-
-  void remove_last_item(){
-    printf("Popping last effect\n");
-    _controllers.pop_back();
-  }
-
-  void addEffect(const char *name, float* control_port, float min_value, float default_value, float max_value){
-    printf("Adding effect %s %p\n",name,control_port);
-    _controllers.push_back(control_port);
-  }
-
-  void addButton(const char* label, float* zone) {
-    addEffect(label, zone, 0, 0, 1);
-  }
-  void addToggleButton(const char* label, float* zone) {
-    addEffect(label, zone, 0, 0, 1);
-  }
-  void addCheckButton(const char* label, float* zone) {
-    addEffect(label, zone, 0, 0, 1);
-  }
-  void addVerticalSlider(const char* label, float* zone, float init, float min, float max, float step) {
-    addEffect(label, zone,  min, init, max);
-  }
-  void addHorizontalSlider(const char* label, float* zone, float init, float min, float max, float step) {
-    addEffect(label, zone,  min, init, max);
-  }
-  void addNumEntry(const char* label, float* zone, float init, float min, float max, float step) {
-    addEffect(label, zone, min, init, max); // The INT effect format might not work. Need to go through the code first.
-  }
-  
-  // -- passive widgets
-
-  void addNumDisplay(const char* label, float* zone, int precision) {remove_last_item();}
-  void addTextDisplay(const char* label, float* zone, const char* names[], float min, float max) {remove_last_item();}
-  void addHorizontalBargraph(const char* label, float* zone, float min, float max) {
-    _graphs.push_back(zone);
-    //remove_last_item(); // remove metadata
-    //next_peak = zone;
-  }
-  void addVerticalBargraph(const char* label, float* zone, float min, float max) {
-    _graphs.push_back(zone);
-    //remove_last_item(); // remove metadata
-    //next_peak = zone;
-  }
-
-};
-
-mydsp *d;
-MyUI *ui;
-
-static void set_compressor_parameter(int num,float value){
-  float *controller = ui->_controllers.at(num);
-  *controller = value;
-  //printf("Setting controller %d (%p) to %f (%f)\n",num,controller,value,*controller);
-}
-
-static float get_compressor_parameter(int num){
-  float *controller = ui->_controllers.at(num);
-  return *controller;
-}
-
-static float get_graph_value(int num){
-  float *controller = ui->_graphs.at(num);
-  return *controller;
-}
 
 #include "mQt_compressor_widget_callbacks.h"
 
@@ -206,10 +64,61 @@ static void set_colors(void){
   das_colors[15] = QColor("#7a7967");
 }
 
+bool g_autoconnect = false;
+const char *g_jack_client_name = "radium_compressor";
+const char *g_settings_filename = NULL;
+const char *g_shared_mem_key = NULL;
+
+QWidget *create_compressor_editor(QWidget *parent, void *compressor){
+  // A minimal radium patch environment.
+  struct Patch *patch = new Patch;
+  SoundPlugin *plugin = new SoundPlugin;
+  patch->patchdata = plugin;
+  plugin->compressor = compressor;
+  
+  Compressor_widget *compressor_widget = new Compressor_widget(patch,parent);
+
+  if(g_settings_filename!=NULL)
+    compressor_widget->load(g_settings_filename);
+
+  set_colors();
+
+  QPalette pal = compressor_widget->palette();
+  //pal.setColor(compressor.backgroundRole(), das_colors[11].light(200));
+  pal.setColor(compressor_widget->backgroundRole(), das_colors[11].light(100));
+  compressor_widget->setPalette(pal);
+
+  return compressor_widget;
+}
+
+void delete_compressor_editor(QWidget *widget){
+  Compressor_widget *compressor = static_cast<Compressor_widget *>(widget);
+  struct Patch *patch=compressor->_patch;
+  struct SoundPlugin *plugin=(SoundPlugin*)patch->patchdata;
+  COMPRESSOR_delete(plugin->compressor);
+  //delete compressor;
+}
+
+void start_program(int argc, char **argv, void *compressor){
+
+  QApplication app(argc, argv);
+
+  {
+    QWidget *compressor_editor = create_compressor_editor(NULL, compressor);
+
+    compressor_editor->show();
+
+    app.exec();
+
+    delete_compressor_editor(compressor_editor);
+  }
+}
+
+#ifndef COMPILING_VST
+
+void *COMPRESSOR_create_ladspa(const char *key);
+
 int main(int argc, char **argv){
-  const char *settings_filename = NULL;
-  bool autoconnect = false;
-  const char *jack_client_name = "radium_compressor";
 
   OPTARGS_BEGIN("radium_compressor [--autoconnect] [--client-name s] [--settings-filename s] [settings-filename]\n"
                 "                  [ -ac         ] [ -cn          s] [ -sn                s] [settings filename]\n"
@@ -220,40 +129,23 @@ int main(int argc, char **argv){
                 )
     {
 
-      OPTARG("--settings-filename","-sn") settings_filename=OPTARG_GETSTRING();
-      OPTARG("--autoconnect","-ac") autoconnect=true;
-      OPTARG("--client-name","-cn") jack_client_name=OPTARG_GETSTRING();
-      OPTARG_LAST() settings_filename=OPTARG_GETSTRING();
+      OPTARG("--settings-filename","-sn") g_settings_filename=OPTARG_GETSTRING();
+      OPTARG("--autoconnect","-ac") g_autoconnect=true;
+      OPTARG("--client-name","-cn") g_jack_client_name=OPTARG_GETSTRING();
+      OPTARG("--ladspa-slave","-ls") g_shared_mem_key = OPTARG_GETSTRING();
+      OPTARG_LAST() g_settings_filename=OPTARG_GETSTRING();
     }OPTARGS_END;
 
-  QApplication app(argc, argv);
-  set_colors();
+  if(g_shared_mem_key!=NULL){
 
-  d = new mydsp;
-  //d->init(44100); // d->init is called in audio.init.
-  
-  jackaudio audio;
-  audio.init(jack_client_name, d);
-  //finterface->recallState(rcfilename);	
-  audio.start(autoconnect);
+    start_program(argc,argv,COMPRESSOR_create_ladspa(g_shared_mem_key));
 
-  ui = new MyUI;
-  d->buildUserInterface(ui);
+  }else{
 
-  Compressor_widget compressor;
-  if(settings_filename!=NULL)
-    compressor.load(settings_filename);
+    start_program(argc,argv, COMPRESSOR_create(0));
 
-  compressor.show();
-
-  QPalette pal = compressor.palette();
-  //pal.setColor(compressor.backgroundRole(), das_colors[11].light(200));
-  pal.setColor(compressor.backgroundRole(), das_colors[11].light(100));
-  compressor.setPalette(pal);
-
-  app.exec();
-
-  audio.stop();
-
+  }
   return 0;
 }
+
+#endif

@@ -2,6 +2,8 @@ PREFIX ?= /usr/local
 bindir ?= $(PREFIX)/bin
 libdir ?= $(PREFIX)/lib
 
+#FIX locally. Line below removed from dsp file.
+#effect.bypass2(checkbox("[6] bypass"), compressor) 
 
 # These two commands are used by me, since most of the source files are stored in the Radium tree.
 # You would normally just run "make" to compile the program.
@@ -9,20 +11,29 @@ libdir ?= $(PREFIX)/lib
 # make copy_files && make all && ./radium_compressor 
 # make copy_files && rm -f benchmark && make benchmark && ./benchmark && ./benchmark && ./benchmark
 
+OPT = -O3 -ffast-math
+OPT_DSP = -O3 -ffast-math #-funroll-loops
+CPP = g++ -DDEBUG  -Wall -msse -mfpmath=sse -DUSE_QT_REQTYPE -DUSE_QT4 -g -I. -IQt
+#  -fpredictive-commoning -ftree-vectorize 
+# -funroll-loops -fira-loop-pressure -fipa-cp-clone -ftree-loop-distribute-patterns
 
-CPP = g++ -DDEBUG -O3 -Wall -msse -mfpmath=sse -DUSE_QT_REQTYPE -DUSE_QT4 -g -I. -ffast-math -IQt
+#-finline-functions 
 
-#FAUST = /home/kjetil/faudiostream/compiler/faust -vec
-FAUST = faust -vec
+FAUST = /home/kjetil/faudiostream/compiler/faust -vec
+#FAUST = faust -vec
 
 # only used for copy files
 RADIUM_PATH = /home/kjetil/radium-qt4
 
-all: audio/system_compressor.cpp
+all: system_compressor_wrapper.o myladspa.o
 	cd Qt && ./create_source_from_ui.sh `../find_moc_and_uic_paths.sh uic` `../find_moc_and_uic_paths.sh moc` compressor_widget
-	$(CPP) Qt/Qt_SliderPainter.cpp `pkg-config --cflags Qt3Support` -c
-	$(CPP) main.cpp Qt_SliderPainter.o -Iaudio/faudiostream/architecture/ `pkg-config --libs --cflags Qt3Support` -ljack -o radium_compressor
+	$(CPP) Qt/Qt_SliderPainter.cpp `pkg-config --cflags Qt3Support` -c  $(OPT)
+	$(CPP) main.cpp Qt_SliderPainter.o system_compressor_wrapper.o myladspa.o -DCOMPILING_STANDALONE -Iaudio/faudiostream/architecture/ `pkg-config --libs --cflags Qt3Support` -ljack -o radium_compressor  $(OPT)
+# /usr/lib64/libprofiler.so.0
+# make copy_files && make all && CPUPROFILE=ls.prof ./radium_compressor 
 
+clean:
+	rm -f *.o
 
 install:
 	install -d $(DESTDIR)$(bindir)
@@ -32,9 +43,33 @@ install:
 uninstall:
 	rm -f $(DESTDIR)$(bindir)/radium_compressor
 
+# ladpa plugin
+radium_compressor.so: audio/system_compressor.cpp myladspa.o system_compressor_wrapper_ladspa.o
+	$(CPP) Qt/Qt_SliderPainter.cpp `pkg-config --cflags Qt3Support` -c -fPIC $(OPT)
+	$(CPP) -DCOMPILING_LADSPA main.cpp -Iaudio/faudiostream/architecture/ `pkg-config --libs --cflags Qt3Support` -c -fPIC  $(OPT)
+	$(CPP) `pkg-config --libs Qt3Support` myladspa.o system_compressor_wrapper_ladspa.o -shared -fPIC -o radium_compressor.so
+
+system_compressor_wrapper.o: audio/system_compressor_wrapper.cpp audio/system_compressor.cpp
+	$(CPP) -Ifaudiostream/architecture `pkg-config --cflags QtCore` -DCOMPILING_STANDALONE audio/system_compressor_wrapper.cpp -c -fPIC $(OPT_DSP)
+
+system_compressor_wrapper_ladspa.o: audio/system_compressor_wrapper.cpp audio/system_compressor.cpp
+	$(CPP) -Ifaudiostream/architecture `pkg-config --cflags QtCore` -DCOMPILING_LADSPA audio/system_compressor_wrapper.cpp -c -fPIC -o system_compressor_wrapper_ladspa.o $(OPT_DSP)
+
+myladspa.o: myladspa.cpp audio/system_compressor.cpp
+	$(CPP) -DCOMPILING_LADSPA -Ifaudiostream/architecture `pkg-config --cflags QtCore` myladspa.cpp -fPIC -c  $(OPT_DSP)
+
+audio/system_compressor.cpp: audio/system_compressor.dsp standalone_compressor.dsp
+	cp standalone_compressor.dsp audio/
+	$(FAUST) -cn Faust_system_compressor audio/standalone_compressor.dsp >audio/system_compressor.cpp
+
+#audio/system_compressor_ladspa.cpp: audio/system_compressor.dsp standalone_compressor.dsp
+#	cp standalone_compressor.dsp audio/
+#	$(FAUST) -cn Faust_system_compressor -a myladspa.cpp audio/standalone_compressor.dsp >audio/system_compressor_ladspa.cpp
+
 
 copy_files:
 	cp $(RADIUM_PATH)/Qt/qt4_compressor_widget.ui Qt/
+	cp $(RADIUM_PATH)/Qt/compressor_vertical_sliders.cpp Qt/
 	cp $(RADIUM_PATH)/Qt/Qt_compressor_widget_callbacks.h Qt/
 	cp $(RADIUM_PATH)/Qt/Qt_MyQCheckBox.h Qt/
 	cp $(RADIUM_PATH)/Qt/Qt_MyQButton.h Qt/
@@ -47,6 +82,9 @@ copy_files:
 	cp $(RADIUM_PATH)/Qt/Qt_instruments_proc.h Qt/
 
 	cp $(RADIUM_PATH)/audio/system_compressor.dsp audio/
+	cp $(RADIUM_PATH)/audio/fast_log_exp.dsp audio/
+	cp $(RADIUM_PATH)/audio/system_compressor_wrapper_proc.h audio/
+	cp $(RADIUM_PATH)/audio/system_compressor_wrapper.cpp audio/
 	cp $(RADIUM_PATH)/audio/typepunning.h audio/
 	cp $(RADIUM_PATH)/audio/undo_audio_effect_proc.h audio/
 	cp $(RADIUM_PATH)/audio/SoundPlugin.h audio/
@@ -75,9 +113,6 @@ copy_files:
 	cp -a $(RADIUM_PATH)/audio/faudiostream audio/
 
 
-audio/system_compressor.cpp: audio/system_compressor.dsp
-	$(FAUST) audio/system_compressor.dsp >audio/system_compressor.cpp
-
 # Note that 0.9.55 runs the benchmark program a bit faster than 0.9.46.
 # I guess it's because of more min/max functions in 0.9.55, but it could also
 # be because of some castings.
@@ -93,4 +128,14 @@ benchmark:
 
 # Relative accuracy of faster pow2 / faster log: 0.0152579 / 0.0130367
 # Relative accuracy of fast pow2 / fast log: 1.58868e-05 / 2.09348e-05
+
+#/home/kjetil/faudiostream/compiler/faust -a ladspa.cpp system_compressor.dsp >ladspa_compressor.cpp
+#g++ ladspa_compressor.cpp -I /home/kjetil/faudiostream/architecture/ -shared -fPIC -o ladspa_compressor.so
+
+VSTPATH = /home/kjetil/Dropbox/radium_build/vstsdk2.4
+vst:
+	$(FAUST) audio/standalone_compressor.dsp >compressor_vst.cpp
+	$(CPP) Qt/Qt_SliderPainter.cpp `pkg-config --cflags Qt3Support` -c -fPIC
+	$(CPP) -DCOMPILING_VST main.cpp -Iaudio/faudiostream/architecture/ `pkg-config --libs --cflags Qt3Support` -c -fPIC
+	$(CPP) -I $(VSTPATH)/public.sdk/source/vst2.x/ -I $(VSTPATH)/pluginterfaces/vst2.x/ -I $(VSTPATH) `pkg-config --cflags QtGui` `pkg-config --libs QtGui` vstplugin.cpp -Iaudio $(VSTPATH)/public.sdk/source/vst2.x/audioeffectx.cpp $(VSTPATH)/public.sdk/source/vst2.x/audioeffect.cpp  $(VSTPATH)/public.sdk/source/vst2.x/vstplugmain.cpp main.o Qt_SliderPainter.o -shared -o radium_compressor.so -fPIC
 
