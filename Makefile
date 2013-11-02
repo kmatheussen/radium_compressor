@@ -12,7 +12,8 @@ libdir ?= $(PREFIX)/lib
 # make copy_files && rm -f benchmark && make benchmark && ./benchmark && ./benchmark && ./benchmark
 
 OPT = -O3 -ffast-math
-OPT_DSP = -O3 -ffast-math #-funroll-loops
+OPT_DSP = -O3 -ffast-math -Wno-strict-aliasing
+#-funroll-loops
 CPP = g++ -DDEBUG  -Wall -msse -mfpmath=sse -DUSE_QT_REQTYPE -DUSE_QT4 -g -I. -IQt
 #  -fpredictive-commoning -ftree-vectorize 
 # -funroll-loops -fira-loop-pressure -fipa-cp-clone -ftree-loop-distribute-patterns
@@ -118,7 +119,7 @@ copy_files:
 # be because of some castings.
 benchmark:
 	$(FAUST) -a bench.cpp audio/system_compressor.dsp >compressor_benchmark.cpp 
-	$(CPP) benchmark.cpp -Iaudio -o benchmark -lpthread
+	$(CPP) benchmark.cpp -Iaudio -o benchmark -lpthread $(OPT_DSP)
 
 # original db2linear/linear2db: 60 MB/s
 # fast pow2/log: 420 MB/s

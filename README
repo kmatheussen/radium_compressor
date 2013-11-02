@@ -37,7 +37,7 @@ INTRODUCTION
         The Radium version is an optimized version of this compressor
         by using fast approximate logarithmic and exponential functions
         written by Paul Mineiro:
-        http://www.machinedlearnings.com/2011/06/fast-approximate-logarithm-exponential.htm
+        http://www.machinedlearnings.com/2011/06/fast-approximate-logarithm-exponential.html
 
         The GUI shows accurately the sound used for compression,
         and how much the sound is being compressed.
