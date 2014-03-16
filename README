@@ -42,8 +42,6 @@ INTRODUCTION
         The GUI shows accurately the sound used for compression,
         and how much the sound is being compressed.
 
-        I haven't seen this in any audio compressor GUI before,
-        but it's probably been done before.
 
 
 BUILD DEPENDENCIES FEDORA:

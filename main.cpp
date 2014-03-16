@@ -16,9 +16,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA. */
 
 
 #include <math.h>
+#include <signal.h>
+
 #include <string>
 
 //#include "audio/faudiostream/architecture/faust/gui/UI.h"
+
+#include "nonlib/nsm.h"
 
 #include <vector>
 
@@ -69,7 +73,10 @@ const char *g_jack_client_name = "radium_compressor";
 const char *g_settings_filename = NULL;
 const char *g_shared_mem_key = NULL;
 
-QWidget *create_compressor_editor(QWidget *parent, void *compressor){
+static Compressor_widget *g_compressor_editor = NULL;
+static void *g_compressor = NULL;
+
+Compressor_widget *create_compressor_editor(QWidget *parent, void *compressor){
   // A minimal radium patch environment.
   struct Patch *patch = new Patch;
   SoundPlugin *plugin = new SoundPlugin;
@@ -91,32 +98,141 @@ QWidget *create_compressor_editor(QWidget *parent, void *compressor){
   return compressor_widget;
 }
 
-void delete_compressor_editor(QWidget *widget){
-  Compressor_widget *compressor = static_cast<Compressor_widget *>(widget);
-  struct Patch *patch=compressor->_patch;
+void delete_compressor_editor(Compressor_widget *compressor_editor){
+  struct Patch *patch=compressor_editor->_patch;
   struct SoundPlugin *plugin=(SoundPlugin*)patch->patchdata;
   COMPRESSOR_delete(plugin->compressor);
   //delete compressor;
 }
 
-void start_program(int argc, char **argv, void *compressor){
+static nsm_client_t *g_nsm = 0;
+static bool g_nsm_quit_now = false;
+
+
+struct NSMTimer : public QTimer{
+  void timerEvent(QTimerEvent * e){
+    if(g_nsm_quit_now==true)
+      QApplication::quit();
+    else
+      nsm_check_nowait(g_nsm);
+  }
+};
+
+NSMTimer g_nsm_timer;
+
+static const char *g_nsm_save_filename;
+
+int rc_nsm_open ( const char *name,                           
+                  const char *display_name,                   
+                  const char *client_id,                      
+                  char **out_msg,                             
+                  void *userdata )                            
+{                                                         
+
+  if(g_compressor_editor != NULL) {
+    fprintf(stderr,"calling nsm open twice is not supported.\n");
+    abort();
+  }
+
+  //do_open_stuff();
+  g_jack_client_name = client_id;
+  g_compressor = COMPRESSOR_create(0);
+
+  if(g_nsm_save_filename != NULL)
+    free((void*)g_nsm_save_filename);
+  g_nsm_save_filename = strdup(name);
+
+  g_compressor_editor = create_compressor_editor(NULL, g_compressor);
+  g_compressor_editor->load_button->hide();
+  g_compressor_editor->save_button->hide();
+  g_compressor_editor->setWindowFlags ( Qt::CustomizeWindowHint | Qt::WindowTitleHint);
+
+  g_compressor_editor->load(name, false);
+  g_compressor_editor->show();
+
+
+  char temp[1000];
+  sprintf(temp, "Open. name: %s, display_name: %s, client_id: %s\n",name, display_name, client_id);
+  *out_msg = strdup(temp);
+  puts(temp);
+
+  return ERR_OK;                                    
+}                                                         
+
+int rc_nsm_save ( char **out_msg,                             
+              void *userdata )                            
+{               
+  //do_save_stuff(); 
+  g_compressor_editor->save(g_nsm_save_filename);
+                                     
+  char temp[1000];
+  sprintf(temp, "Save. userdata: %p\n", userdata);
+  *out_msg = strdup(temp);
+  puts(temp);
+  return ERR_OK;                                        
+}                                                         
+
+void rc_nsm_signalHanlder(int sigNum)
+{
+  g_nsm_quit_now = true;
+}
+
+
+void start_program(int argc, char **argv){
 
   QApplication app(argc, argv);
 
   {
-    QWidget *compressor_editor = create_compressor_editor(NULL, compressor);
 
-    compressor_editor->show();
+
+    // nsm
+    {
+      const char *nsm_url = getenv( "NSM_URL" );
+      if ( nsm_url )                                        
+        {                                                     
+          g_nsm = nsm_new();                                  
+          
+          printf("NSM: %p\n",g_nsm);
+
+          nsm_set_open_callback( g_nsm, rc_nsm_open, 0 );     
+          nsm_set_save_callback( g_nsm, rc_nsm_save, 0 );     
+          
+          if ( 0 == nsm_init( g_nsm, nsm_url ) )              
+            {                                                
+              signal(SIGTERM, rc_nsm_signalHanlder);
+              nsm_send_announce( g_nsm, "Radium Compressor", "", argv[0] ); 
+              g_nsm_timer.setInterval(50);
+              g_nsm_timer.start();
+              
+            }                                                 
+          else                                              
+            {                                                 
+              nsm_free( g_nsm );                              
+              g_nsm = 0;                                      
+            }                                                 
+        }                                                     
+    }
+
+    if(g_nsm == NULL){
+      if (g_compressor == NULL)
+        g_compressor = COMPRESSOR_create(0);
+      g_compressor_editor = create_compressor_editor(NULL, g_compressor);
+      g_compressor_editor->show();
+    }
 
     app.exec();
 
-    delete_compressor_editor(compressor_editor);
+    if(g_compressor_editor != NULL)
+      delete_compressor_editor(g_compressor_editor);
   }
 }
 
 #ifndef COMPILING_VST
 
 void *COMPRESSOR_create_ladspa(const char *key);
+
+
+
 
 int main(int argc, char **argv){
 
@@ -132,17 +248,18 @@ int main(int argc, char **argv){
       OPTARG("--settings-filename","-sn") g_settings_filename=OPTARG_GETSTRING();
       OPTARG("--autoconnect","-ac") g_autoconnect=true;
       OPTARG("--client-name","-cn") g_jack_client_name=OPTARG_GETSTRING();
-      OPTARG("--ladspa-slave","-ls") g_shared_mem_key = OPTARG_GETSTRING();
+      //OPTARG("--ladspa-slave","-ls") g_shared_mem_key = OPTARG_GETSTRING();
       OPTARG_LAST() g_settings_filename=OPTARG_GETSTRING();
     }OPTARGS_END;
 
   if(g_shared_mem_key!=NULL){
 
-    start_program(argc,argv,COMPRESSOR_create_ladspa(g_shared_mem_key));
+    g_compressor = COMPRESSOR_create_ladspa(g_shared_mem_key);
+    start_program(argc,argv);
 
   }else{
 
-    start_program(argc,argv, COMPRESSOR_create(0));
+    start_program(argc,argv);
 
   }
   return 0;

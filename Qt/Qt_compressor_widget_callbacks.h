@@ -431,15 +431,17 @@ class Compressor_widget : public QWidget, public Ui::Compressor_widget{
     update();
   }
 
-  void load(QString filename){
+  void load(QString filename, bool complain_if_file_not_found = true){
     FILE *file = fopen(filename,"r");
 
     if(file==NULL){
-      QMessageBox msgBox;
-      msgBox.setText("Could not open file \""+filename+"\".");
-      msgBox.setStandardButtons(QMessageBox::Ok);
-      msgBox.setDefaultButton(QMessageBox::Ok);
-      msgBox.exec();
+      if(complain_if_file_not_found){
+        QMessageBox msgBox;
+        msgBox.setText("Could not open file \""+filename+"\".");
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.setDefaultButton(QMessageBox::Ok);
+        msgBox.exec();
+      }
       return;
     }
     
@@ -451,9 +453,49 @@ class Compressor_widget : public QWidget, public Ui::Compressor_widget{
     read_float(file); // input volume (currently not used)
     set_compressor_parameter(_patch, COMP_EFF_OUTPUT_VOLUME,read_float(file)); // output volume
 
+    int x = read_float(file);
+    int y = read_float(file);
+    int width = read_float(file);
+    int height = read_float(file);
+
+    if(width>0 && height>0){
+      move(x,y);
+      resize(width,height);
+    }
+
     fclose(file);
 
     update_gui();
+  }
+
+  void save(QString filename){
+    FILE *file = fopen(filename,"w");
+
+    if(file==NULL){
+      QMessageBox msgBox;
+      msgBox.setText("Could not save file.");
+      msgBox.setStandardButtons(QMessageBox::Ok);
+      msgBox.setDefaultButton(QMessageBox::Ok);
+      msgBox.exec();
+      return;
+    }
+
+    fprintf(file,"%f\n%f\n%f\n%f\n%f\n%f\n",
+            get_compressor_parameter(_patch, COMP_EFF_RATIO),
+            get_compressor_parameter(_patch, COMP_EFF_THRESHOLD),
+            get_compressor_parameter(_patch, COMP_EFF_ATTACK),
+            get_compressor_parameter(_patch, COMP_EFF_RELEASE),
+            //get_compressor_parameter(INPUT_VOLUME),
+            0.0f, // input volume (in dB)
+            get_compressor_parameter(_patch, COMP_EFF_OUTPUT_VOLUME)
+            );
+
+    fprintf(file,"%d\n%d\n%d\n%d\n",
+            pos().x(),pos().y(),
+            width(),height()
+            );
+
+    fclose(file);
   }
 
 public slots:
@@ -510,28 +552,7 @@ void on_enable_checkbox_toggled(bool val){
     if(filename=="")
       return;
 
-    FILE *file = fopen(filename,"w");
-
-    if(file==NULL){
-      QMessageBox msgBox;
-      msgBox.setText("Could not save file.");
-      msgBox.setStandardButtons(QMessageBox::Ok);
-      msgBox.setDefaultButton(QMessageBox::Ok);
-      msgBox.exec();
-      return;
-    }
-
-    fprintf(file,"%f\n%f\n%f\n%f\n%f\n%f\n",
-            get_compressor_parameter(_patch, COMP_EFF_RATIO),
-            get_compressor_parameter(_patch, COMP_EFF_THRESHOLD),
-            get_compressor_parameter(_patch, COMP_EFF_ATTACK),
-            get_compressor_parameter(_patch, COMP_EFF_RELEASE),
-            //get_compressor_parameter(INPUT_VOLUME),
-            0.0f, // input volume (in dB)
-            get_compressor_parameter(_patch, COMP_EFF_OUTPUT_VOLUME)
-            );
-
-    fclose(file);
+    save(filename);
   }
 };
 

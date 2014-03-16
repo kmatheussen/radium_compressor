@@ -20,8 +20,8 @@ CPP = g++ -DDEBUG  -Wall -msse -mfpmath=sse -DUSE_QT_REQTYPE -DUSE_QT4 -g -I. -I
 
 #-finline-functions 
 
-FAUST = /home/kjetil/faudiostream/compiler/faust -vec
-#FAUST = faust -vec
+#FAUST = /home/kjetil/faudiostream/compiler/faust -vec
+FAUST = faust -vec
 
 # only used for copy files
 RADIUM_PATH = /home/kjetil/radium-qt4
@@ -29,7 +29,7 @@ RADIUM_PATH = /home/kjetil/radium-qt4
 all: system_compressor_wrapper.o myladspa.o
 	cd Qt && ./create_source_from_ui.sh `../find_moc_and_uic_paths.sh uic` `../find_moc_and_uic_paths.sh moc` compressor_widget
 	$(CPP) Qt/Qt_SliderPainter.cpp `pkg-config --cflags Qt3Support` -c  $(OPT)
-	$(CPP) main.cpp Qt_SliderPainter.o system_compressor_wrapper.o myladspa.o -DCOMPILING_STANDALONE -Iaudio/faudiostream/architecture/ `pkg-config --libs --cflags Qt3Support` -ljack -o radium_compressor  $(OPT)
+	$(CPP) main.cpp Qt_SliderPainter.o system_compressor_wrapper.o myladspa.o -DCOMPILING_STANDALONE -Iaudio/faudiostream/architecture/ `pkg-config --libs --cflags Qt3Support``pkg-config --cflags --libs liblo`  -ljack -o radium_compressor  $(OPT)
 # /usr/lib64/libprofiler.so.0
 # make copy_files && make all && CPUPROFILE=ls.prof ./radium_compressor 
 
