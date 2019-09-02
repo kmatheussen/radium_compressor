@@ -14,7 +14,7 @@ libdir ?= $(PREFIX)/lib
 OPT = -O3 -ffast-math
 OPT_DSP = -O3 -ffast-math -Wno-strict-aliasing
 #-funroll-loops
-CPP = g++ -DDEBUG  -Wall -msse -mfpmath=sse -DUSE_QT_REQTYPE -DUSE_QT4 -g -I. -IQt
+CPP = g++ -DDEBUG  -Wall -msse -mfpmath=sse -DUSE_QT_REQTYPE -DUSE_QT4 -g -I. -IQt -fPIC -Wno-class-memaccess
 #  -fpredictive-commoning -ftree-vectorize 
 # -funroll-loops -fira-loop-pressure -fipa-cp-clone -ftree-loop-distribute-patterns
 
@@ -28,8 +28,8 @@ RADIUM_PATH = /home/kjetil/radium-qt4
 
 all: system_compressor_wrapper.o myladspa.o
 	cd Qt && ./create_source_from_ui.sh `../find_moc_and_uic_paths.sh uic` `../find_moc_and_uic_paths.sh moc` compressor_widget
-	$(CPP) Qt/Qt_SliderPainter.cpp `pkg-config --cflags Qt3Support` -c  $(OPT)
-	$(CPP) main.cpp Qt_SliderPainter.o system_compressor_wrapper.o myladspa.o -DCOMPILING_STANDALONE -Iaudio/faudiostream/architecture/ `pkg-config --libs --cflags Qt3Support``pkg-config --cflags --libs liblo`  -ljack -o radium_compressor  $(OPT)
+	$(CPP) Qt/Qt_SliderPainter.cpp `pkg-config --cflags Qt5Widgets` -c  $(OPT)
+	$(CPP) main.cpp Qt_SliderPainter.o system_compressor_wrapper.o myladspa.o -DCOMPILING_STANDALONE -Iaudio/faudiostream/architecture/ `pkg-config --cflags Qt5Widgets --libs Qt5Core --libs Qt5Widgets` `pkg-config --cflags --libs liblo`  -ljack -o radium_compressor  $(OPT)
 # /usr/lib64/libprofiler.so.0
 # make copy_files && make all && CPUPROFILE=ls.prof ./radium_compressor 
 
@@ -46,18 +46,18 @@ uninstall:
 
 # ladpa plugin
 radium_compressor.so: audio/system_compressor.cpp myladspa.o system_compressor_wrapper_ladspa.o
-	$(CPP) Qt/Qt_SliderPainter.cpp `pkg-config --cflags Qt3Support` -c -fPIC $(OPT)
-	$(CPP) -DCOMPILING_LADSPA main.cpp -Iaudio/faudiostream/architecture/ `pkg-config --libs --cflags Qt3Support` -c -fPIC  $(OPT)
-	$(CPP) `pkg-config --libs Qt3Support` myladspa.o system_compressor_wrapper_ladspa.o -shared -fPIC -o radium_compressor.so
+	$(CPP) Qt/Qt_SliderPainter.cpp `pkg-config --cflags Qt5Widgets` -c -fPIC $(OPT)
+	$(CPP) -DCOMPILING_LADSPA main.cpp -Iaudio/faudiostream/architecture/ `pkg-config --libs --cflags Qt5Widgets` -c -fPIC  $(OPT)
+	$(CPP) `pkg-config --libs Qt5Widgets` myladspa.o system_compressor_wrapper_ladspa.o -shared -fPIC -o radium_compressor.so
 
 system_compressor_wrapper.o: audio/system_compressor_wrapper.cpp audio/system_compressor.cpp
-	$(CPP) -Ifaudiostream/architecture `pkg-config --cflags QtCore` -DCOMPILING_STANDALONE audio/system_compressor_wrapper.cpp -c -fPIC $(OPT_DSP)
+	$(CPP) -Ifaudiostream/architecture `pkg-config --cflags Qt5Core` -DCOMPILING_STANDALONE audio/system_compressor_wrapper.cpp -c -fPIC $(OPT_DSP)
 
 system_compressor_wrapper_ladspa.o: audio/system_compressor_wrapper.cpp audio/system_compressor.cpp
-	$(CPP) -Ifaudiostream/architecture `pkg-config --cflags QtCore` -DCOMPILING_LADSPA audio/system_compressor_wrapper.cpp -c -fPIC -o system_compressor_wrapper_ladspa.o $(OPT_DSP)
+	$(CPP) -Ifaudiostream/architecture `pkg-config --cflags Qt5Core` -DCOMPILING_LADSPA audio/system_compressor_wrapper.cpp -c -fPIC -o system_compressor_wrapper_ladspa.o $(OPT_DSP)
 
 myladspa.o: myladspa.cpp audio/system_compressor.cpp
-	$(CPP) -DCOMPILING_LADSPA -Ifaudiostream/architecture `pkg-config --cflags QtCore` myladspa.cpp -fPIC -c  $(OPT_DSP)
+	$(CPP) -DCOMPILING_LADSPA -Ifaudiostream/architecture `pkg-config --cflags Qt5Core` myladspa.cpp -fPIC -c  $(OPT_DSP)
 
 audio/system_compressor.cpp: audio/system_compressor.dsp standalone_compressor.dsp
 	cp standalone_compressor.dsp audio/
@@ -136,7 +136,7 @@ benchmark:
 VSTPATH = /home/kjetil/Dropbox/radium_build/vstsdk2.4
 vst:
 	$(FAUST) audio/standalone_compressor.dsp >compressor_vst.cpp
-	$(CPP) Qt/Qt_SliderPainter.cpp `pkg-config --cflags Qt3Support` -c -fPIC
-	$(CPP) -DCOMPILING_VST main.cpp -Iaudio/faudiostream/architecture/ `pkg-config --libs --cflags Qt3Support` -c -fPIC
-	$(CPP) -I $(VSTPATH)/public.sdk/source/vst2.x/ -I $(VSTPATH)/pluginterfaces/vst2.x/ -I $(VSTPATH) `pkg-config --cflags QtGui` `pkg-config --libs QtGui` vstplugin.cpp -Iaudio $(VSTPATH)/public.sdk/source/vst2.x/audioeffectx.cpp $(VSTPATH)/public.sdk/source/vst2.x/audioeffect.cpp  $(VSTPATH)/public.sdk/source/vst2.x/vstplugmain.cpp main.o Qt_SliderPainter.o -shared -o radium_compressor.so -fPIC
+	$(CPP) Qt/Qt_SliderPainter.cpp `pkg-config --cflags Qt5Widgets` -c -fPIC
+	$(CPP) -DCOMPILING_VST main.cpp -Iaudio/faudiostream/architecture/ `pkg-config --libs --cflags Qt5Widgets` -c -fPIC
+	$(CPP) -I $(VSTPATH)/public.sdk/source/vst2.x/ -I $(VSTPATH)/pluginterfaces/vst2.x/ -I $(VSTPATH) `pkg-config --cflags Qt5Widgets` `pkg-config --libs Qt5Widgets` vstplugin.cpp -Iaudio $(VSTPATH)/public.sdk/source/vst2.x/audioeffectx.cpp $(VSTPATH)/public.sdk/source/vst2.x/audioeffect.cpp  $(VSTPATH)/public.sdk/source/vst2.x/vstplugmain.cpp main.o Qt_SliderPainter.o -shared -o radium_compressor.so -fPIC
 

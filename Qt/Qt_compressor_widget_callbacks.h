@@ -432,7 +432,7 @@ class Compressor_widget : public QWidget, public Ui::Compressor_widget{
   }
 
   void load(QString filename, bool complain_if_file_not_found = true){
-    FILE *file = fopen(filename,"r");
+    FILE *file = fopen(filename.toUtf8().constData(),"r");
 
     if(file==NULL){
       if(complain_if_file_not_found){
@@ -469,7 +469,7 @@ class Compressor_widget : public QWidget, public Ui::Compressor_widget{
   }
 
   void save(QString filename){
-    FILE *file = fopen(filename,"w");
+    FILE *file = fopen(filename.toUtf8().constData(),"w");
 
     if(file==NULL){
       QMessageBox msgBox;

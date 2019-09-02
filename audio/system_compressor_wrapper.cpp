@@ -219,7 +219,7 @@ void *COMPRESSOR_create_shared(float sample_rate){
   QString key = "radium_crashreporter_" + QString::number(QDateTime::currentMSecsSinceEpoch());
   QSharedMemory *shared = new QSharedMemory(key);
   if(shared->create(sizeof(Compressor_wrapper))==false){
-    fprintf(stderr,"COMPRESSOR_create_shared: Couldn't create... Error: %s\n",shared->error()==QSharedMemory::NoError?"No error (?)":shared->errorString().toAscii().data());
+    fprintf(stderr,"COMPRESSOR_create_shared: Couldn't create... Error: %s\n",shared->error()==QSharedMemory::NoError?"No error (?)":shared->errorString().toUtf8().constData());
     return NULL;
   }
 
@@ -243,10 +243,12 @@ void *COMPRESSOR_create_from_shared_mem_key(const char *key){
   return shared->data();
 }
 
+/*
 const char *COMPRESSOR_get_shared_mem_key(void *das_wrapper){
   Compressor_wrapper *wrapper = (Compressor_wrapper*)das_wrapper;
   return wrapper->key.toAscii();
 }
+*/
 
 #if COMPILING_STANDALONE
 extern char *g_shared_mem_key;

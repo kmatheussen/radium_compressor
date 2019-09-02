@@ -559,7 +559,7 @@ void *COMPRESSOR_create_ladspa(const char *key){
   QSharedMemory *shared = new QSharedMemory(key);
   
   if(shared->attach()==false){
-    fprintf(stderr,"Ladspa compressor: Couldn't attach... Error: %s\n",shared->error()==QSharedMemory::NoError?"No error (?)":shared->errorString().toAscii().data());
+    fprintf(stderr,"Ladspa compressor: Couldn't attach... Error: %s\n",shared->error()==QSharedMemory::NoError?"No error (?)":shared->errorString().toUtf8().constData());
     exit(0);
   }
 
@@ -577,7 +577,7 @@ static mydsp *create_shared_dsp(){
   QSharedMemory *shared = new QSharedMemory(key);
 
   if(shared->create(sizeof(mydsp))==false){
-    fprintf(stderr,"COMPRESSOR_create_shared: Couldn't create... Error: %s\n",shared->error()==QSharedMemory::NoError?"No error (?)":shared->errorString().toAscii().data());
+    fprintf(stderr,"COMPRESSOR_create_shared: Couldn't create... Error: %s\n",shared->error()==QSharedMemory::NoError?"No error (?)":shared->errorString().toUtf8().constData());
     return NULL;
   }
 
@@ -592,7 +592,7 @@ static mydsp *create_shared_dsp(){
 #endif
 
   //printf("system: %d\n",system(QString(QString("xterm -e gdb /home/kjetil/radium_compressor/radium_compressor --args --ladspa-slave ")+key).toAscii()));
-  printf("system: %d\n",system(QString(QString("xterm -e gdb --args /home/kjetil/radium_compressor/radium_compressor  --ladspa-slave ")+key+" &").toAscii()));
+  printf("system: %d\n",system(QString(QString("xterm -e gdb --args /home/kjetil/radium_compressor/radium_compressor  --ladspa-slave ")+key+" &").toUtf8().constData()));
 
 
   return dsp;
