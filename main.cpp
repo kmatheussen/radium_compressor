@@ -236,6 +236,20 @@ void *COMPRESSOR_create_ladspa(const char *key);
 
 int main(int argc, char **argv){
 
+  {
+    // Qt insists on doing strange things with locale settings, causing commans to appear instead of punctation. In an ideal world, LC_NUMERIC/LANG should never be set to anything else than "C", but unfortunately, many computers runs with uncommon language settings such as french or swedish. By default, programs seems to respect the sane behaviour (in the programming world), namely to never use commas when converting between strings and floats, but Qt does something strange with the world inside the QApplication contructor, and causes commas to be used everywhere if there is an uncommon LC_NUMERIC settings (or uncommon LANG setting).
+    
+    setenv("LC_NUMERIC", "C", 1);
+    
+    putenv(strdup("LC_NUMERIC=C")); // for mingw
+
+    QLocale::setDefault(QLocale::c());
+    
+    QApplication::setDesktopSettingsAware(false);
+
+    QLocale::setDefault(QLocale::C);
+  }
+  
   OPTARGS_BEGIN("radium_compressor [--autoconnect] [--client-name s] [--settings-filename s] [settings-filename]\n"
                 "                  [ -ac         ] [ -cn          s] [ -sn                s] [settings filename]\n"
                 "\n"
