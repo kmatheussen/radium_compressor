@@ -223,11 +223,13 @@ namespace cvs{
         if(mywidget->mouseRelease(event->x(),event->y()))
           event->accept();
       }
+
       void paintEvent ( QPaintEvent * ev ){
         QPainter qp(this);
         MyPainter p(&qp);
         mywidget->repaint(&p);
       }
+
       virtual void resizeEvent ( QResizeEvent * event ){
         mywidget->resized();
       }
@@ -240,7 +242,7 @@ namespace cvs{
     {}
 
     void update(int x1,int y1,int x2,int y2){
-      w.update(x1,y1,x2-x1,y2-y1);
+      w.update(x1,y1,x2-x1,y2-y1);      
     }
     void update(const MyRect &r){
       update(r.x1,r.y1,r.x2,r.y2);
@@ -428,6 +430,7 @@ class Compressor_widget : public QWidget, public Ui::Compressor_widget{
 
     //paint_all=true;
     //updateBackgroundImage();
+    //comp->update();
     update();
   }
 
@@ -465,6 +468,8 @@ class Compressor_widget : public QWidget, public Ui::Compressor_widget{
 
     fclose(file);
 
+    comp->background_image_must_be_updated=true;
+    
     update_gui();
   }
 

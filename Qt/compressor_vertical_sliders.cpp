@@ -1108,7 +1108,7 @@ struct Comp : public MyWidget, public MyTimer{
   }
 
   void repaint(MyPainter *p){
-
+    //printf("Comp::repaint(). Ratio: %f\n", get_compressor_parameter(_patch, COMP_EFF_RATIO));
     if(background_image_must_be_updated==true)
       updateBackgroundImage();
 
